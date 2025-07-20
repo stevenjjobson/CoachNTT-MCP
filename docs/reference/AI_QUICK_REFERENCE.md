@@ -1,6 +1,28 @@
 # 🤖 AI Assistant Quick Reference - MyWorkFlow MCP Server
 
-## 📋 Core Interface Definitions
+This document serves as a quick reference guide for developers working with the MyWorkFlow MCP Server, providing an overview of the architecture, interface definitions, tool endpoints, configuration schemas, and best practices for using AI assistants effectively.
+
+## 🏗️ Architecture Overview
+
+```mermaid
+graph TD
+    A[MCP Client] -->|Commands| B[MyWorkFlow MCP Server]
+    B --> C[Session Manager]
+    B --> D[Context Monitor]
+    B --> E[Reality Checker]
+    B --> F[Documentation Engine]
+    
+    C --> G[Session State]
+    D --> H[Token Tracker]
+    E --> I[Validation Engine]
+    F --> J[Template System]
+    
+    G --> K[(Session Store)]
+    H --> L[(Metrics DB)]
+    I --> M[(Reality Snapshots)]
+    J --> N[(Doc Templates)]
+```
+## 🛠️ Interface Definitions
 
 ### Session Management Interfaces
 
