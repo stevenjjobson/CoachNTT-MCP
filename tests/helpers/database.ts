@@ -32,7 +32,7 @@ export function setupTestDatabase(): void {
     if (!(DatabaseConnection as any).instance) {
       const db = new Database(testDbPath);
       db.pragma('foreign_keys = ON');
-      db.pragma('journal_mode = WAL');
+      db.pragma('journal_mode = DELETE'); // Use DELETE mode for tests to avoid locking
       db.exec(DATABASE_SCHEMA);
       
       const instance = Object.create(DatabaseConnection.prototype);
