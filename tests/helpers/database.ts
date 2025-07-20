@@ -63,12 +63,27 @@ export function setupTestDatabase(): void {
 }
 
 export function cleanupTestDatabase(): void {
+  try {
+    // Close database connection first
+    const instance = (DatabaseConnection as any).instance;
+    if (instance && instance.db) {
+      instance.db.close();
+    }
+  } catch (error) {
+    // Ignore errors during close
+  }
+  
   // Reset the singleton
   (DatabaseConnection as any).resetInstance();
   
   // Clean up test database files
   const testDbDir = join(process.cwd(), 'test-data');
   if (existsSync(testDbDir)) {
-    rmSync(testDbDir, { recursive: true, force: true });
+    try {
+      rmSync(testDbDir, { recursive: true, force: true });
+    } catch (error) {
+      // If deletion fails, it's okay - we'll overwrite on next run
+      console.warn('Failed to clean up test database directory:', error);
+    }
   }
 }
