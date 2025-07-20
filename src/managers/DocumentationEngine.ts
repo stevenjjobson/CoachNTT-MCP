@@ -106,7 +106,7 @@ export class DocumentationEngine {
       const now = Date.now();
 
       this.db.run(
-        `INSERT INTO documentations (id, session_id, doc_type, file_path, generated_at, word_count, sections, references, created_at, updated_at)
+        `INSERT INTO documentations (id, session_id, doc_type, file_path, generated_at, word_count, sections, "references", created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [docId, session_id, doc_type, filePath, now, wordCount, JSON.stringify(sections), JSON.stringify(references), now, now]
       );

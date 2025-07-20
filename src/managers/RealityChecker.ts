@@ -108,6 +108,7 @@ export class RealityChecker {
         id: snapshotId,
         session_id,
         timestamp,
+        check_type,
         discrepancies,
         confidence_score: confidenceScore,
       });
@@ -500,20 +501,22 @@ export class RealityChecker {
     id: string;
     session_id: string;
     timestamp: number;
+    check_type: 'comprehensive' | 'quick' | 'specific';
     discrepancies: Discrepancy[];
     confidence_score: number;
   }): void {
     const insert = this.db.prepare(`
       INSERT INTO reality_snapshots (
-        id, session_id, timestamp, discrepancies,
+        id, session_id, timestamp, check_type, discrepancies,
         confidence_score, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     
     insert.run(
       data.id,
       data.session_id,
       data.timestamp,
+      data.check_type,
       JSON.stringify(data.discrepancies),
       data.confidence_score,
       Date.now()

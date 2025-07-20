@@ -43,17 +43,17 @@ export function setupTestDatabase(): void {
       instance.close = () => db.close();
       instance.transaction = (fn: any) => db.transaction(fn)();
       instance.prepare = (sql: string) => db.prepare(sql);
-      instance.run = (sql: string, params?: unknown) => {
+      instance.run = (sql: string, ...params: any[]) => {
         const stmt = db.prepare(sql);
-        return params ? stmt.run(params) : stmt.run();
+        return params.length > 0 ? stmt.run(...params) : stmt.run();
       };
-      instance.get = (sql: string, params?: unknown) => {
+      instance.get = (sql: string, ...params: any[]) => {
         const stmt = db.prepare(sql);
-        return params ? stmt.get(params) : stmt.get();
+        return params.length > 0 ? stmt.get(...params) : stmt.get();
       };
-      instance.all = (sql: string, params?: unknown) => {
+      instance.all = (sql: string, ...params: any[]) => {
         const stmt = db.prepare(sql);
-        return params ? stmt.all(params) : stmt.all();
+        return params.length > 0 ? stmt.all(...params) : stmt.all();
       };
       
       (DatabaseConnection as any).instance = instance;
