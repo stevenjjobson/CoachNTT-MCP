@@ -341,7 +341,7 @@ export class SessionManager {
   
   async getActiveSession(): Promise<Session | null> {
     const session = this.db.get(
-      "SELECT * FROM sessions WHERE status = 'active' ORDER BY start_time DESC LIMIT 1"
+      'SELECT * FROM sessions WHERE status = \'active\' ORDER BY start_time DESC LIMIT 1'
     );
     
     if (!session) return null;
@@ -1006,7 +1006,7 @@ export class SessionManager {
     if (!projectStats) return;
     
     const completedSessions = this.db.get<{ count: number }>(
-      'SELECT COUNT(*) as count FROM sessions WHERE project_name = ? AND status = "complete"',
+      'SELECT COUNT(*) as count FROM sessions WHERE project_name = ? AND status = \'complete\'',
       session.project_name
     );
     
