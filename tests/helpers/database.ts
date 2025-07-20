@@ -5,8 +5,8 @@ import { DATABASE_SCHEMA } from '../../src/database/schema';
 import { DatabaseConnection } from '../../src/database/connection';
 
 export function setupTestDatabase(): void {
-  // Reset the singleton instance
-  (DatabaseConnection as any).resetInstance();
+  // First cleanup any existing database
+  cleanupTestDatabase();
   
   // Create test data directory
   const testDbDir = join(process.cwd(), 'test-data');
@@ -14,17 +14,7 @@ export function setupTestDatabase(): void {
     mkdirSync(testDbDir, { recursive: true });
   }
   
-  // Remove old test database if exists
   const testDbPath = join(testDbDir, 'test.db');
-  if (existsSync(testDbPath)) {
-    rmSync(testDbPath);
-  }
-  if (existsSync(testDbPath + '-shm')) {
-    rmSync(testDbPath + '-shm');
-  }
-  if (existsSync(testDbPath + '-wal')) {
-    rmSync(testDbPath + '-wal');
-  }
   
   // Override the getInstance method to use test database
   const originalGetInstance = DatabaseConnection.getInstance;
@@ -80,10 +70,27 @@ export function cleanupTestDatabase(): void {
   const testDbDir = join(process.cwd(), 'test-data');
   if (existsSync(testDbDir)) {
     try {
-      rmSync(testDbDir, { recursive: true, force: true });
+      // Try to remove database files individually
+      const testDbPath = join(testDbDir, 'test.db');
+      ['', '-shm', '-wal', '-journal'].forEach(suffix => {
+        const file = testDbPath + suffix;
+        if (existsSync(file)) {
+          try {
+            rmSync(file, { force: true });
+          } catch (e) {
+            // Ignore individual file errors
+          }
+        }
+      });
+      
+      // Try to remove directory
+      try {
+        rmSync(testDbDir, { recursive: true, force: true });
+      } catch (e) {
+        // Directory might not be empty yet, that's okay
+      }
     } catch (error) {
       // If deletion fails, it's okay - we'll overwrite on next run
-      console.warn('Failed to clean up test database directory:', error);
     }
   }
 }
