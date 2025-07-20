@@ -5,7 +5,7 @@ import { DATABASE_SCHEMA } from './schema';
 
 export class DatabaseConnection {
   private db: Database.Database;
-  private static instance: DatabaseConnection;
+  private static instance: DatabaseConnection | null = null;
 
   private constructor() {
     const dbDir = join(process.cwd(), 'data');
@@ -26,6 +26,13 @@ export class DatabaseConnection {
       DatabaseConnection.instance = new DatabaseConnection();
     }
     return DatabaseConnection.instance;
+  }
+  
+  static resetInstance(): void {
+    if (DatabaseConnection.instance) {
+      DatabaseConnection.instance.close();
+      DatabaseConnection.instance = null;
+    }
   }
 
   private initialize(): void {
