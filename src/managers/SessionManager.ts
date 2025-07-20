@@ -1,6 +1,7 @@
 import { BehaviorSubject, Observable } from 'rxjs';
 import { randomUUID } from 'crypto';
 import { DatabaseConnection } from '../database';
+import { ContextMonitor } from './ContextMonitor';
 import {
   Session,
   SessionStartParams,
@@ -21,12 +22,25 @@ import {
 
 export class SessionManager {
   private db: DatabaseConnection;
+  private contextMonitor: ContextMonitor;
   private currentSession$ = new BehaviorSubject<Session | null>(null);
   private sessionMetrics$ = new BehaviorSubject<SessionMetrics | null>(null);
   private contextStatus$ = new BehaviorSubject<{ used: number; total: number; percent: number } | null>(null);
 
   constructor() {
     this.db = DatabaseConnection.getInstance();
+    this.contextMonitor = new ContextMonitor();
+    
+    // Subscribe to context monitor updates
+    this.contextMonitor.getContextStatus().subscribe(status => {
+      if (status) {
+        this.contextStatus$.next({
+          used: status.used_tokens,
+          total: status.total_tokens,
+          percent: status.usage_percent,
+        });
+      }
+    });
   }
 
   getCurrentSession(): Observable<Session | null> {
@@ -64,6 +78,7 @@ export class SessionManager {
         tests_written: 0,
         tests_passing: 0,
         documentation_updated: false,
+        docs_updated: 0,
         context_used: 0,
         velocity_score: 0,
       };
@@ -143,26 +158,44 @@ export class SessionManager {
   }
 
   async createCheckpoint(params: CheckpointParams): Promise<CheckpointResponse> {
+    // Handle async context tracking outside of transaction
+    const session = this.getSessionFromDb(params.session_id);
+    if (!session) {
+      throw new Error(`Session ${params.session_id} not found`);
+    }
+    
+    if (session.status !== 'active') {
+      throw new Error(`Session ${params.session_id} is not active (status: ${session.status})`);
+    }
+    
+    // Track context usage before the transaction
+    const contextUsed = Math.floor(session.context_budget * (params.metrics.context_used_percent / 100));
+    const previousCheckpoint = this.getLatestCheckpoint(params.session_id);
+    const tokensSinceLastCheckpoint = previousCheckpoint 
+      ? contextUsed - (previousCheckpoint.context_used || 0)
+      : contextUsed;
+    
+    if (tokensSinceLastCheckpoint > 0) {
+      await this.contextMonitor.trackUsage(
+        params.session_id,
+        session.current_phase,
+        tokensSinceLastCheckpoint,
+        `Checkpoint: ${params.completed_components.slice(0, 3).join(', ')}${params.completed_components.length > 3 ? '...' : ''}`
+      );
+    }
+    
     return this.db.transaction(() => {
-      // Validate session exists and is active
-      const session = this.getSessionFromDb(params.session_id);
-      if (!session) {
-        throw new Error(`Session ${params.session_id} not found`);
-      }
-      if (session.status !== 'active') {
-        throw new Error(`Session ${params.session_id} is not active (status: ${session.status})`);
-      }
-      
       const now = Date.now();
       const checkpointNumber = this.getNextCheckpointNumber(params.session_id);
       const checkpointId = `${params.session_id}-checkpoint-${checkpointNumber}`;
       
-      // Calculate context snapshot
+      // contextUsed was already calculated above
+      
       const contextSnapshot: ContextSnapshot = {
         session_id: params.session_id,
         checkpoint_id: checkpointId,
         timestamp: now,
-        context_used: Math.floor(session.context_budget * (params.metrics.context_used_percent / 100)),
+        context_used: contextUsed,
         important_files: this.identifyImportantFiles(params.completed_components),
         key_decisions: this.extractKeyDecisions(params.completed_components),
         next_steps: this.generateNextSteps(session, params.completed_components),
@@ -641,6 +674,13 @@ export class SessionManager {
     return (result?.max_number || 0) + 1;
   }
   
+  private getLatestCheckpoint(sessionId: string): any {
+    return this.db.get(
+      `SELECT * FROM checkpoints WHERE session_id = ? ORDER BY checkpoint_number DESC LIMIT 1`,
+      sessionId
+    );
+  }
+  
   private updateSessionMetrics(sessionId: string, metrics: CheckpointParams['metrics']): void {
     const update = this.db.prepare(`
       UPDATE sessions SET
@@ -986,6 +1026,7 @@ export class SessionManager {
       tests_written: dbRow.actual_tests || 0,
       tests_passing: dbRow.actual_tests || 0,
       documentation_updated: dbRow.docs_updated || false,
+      docs_updated: dbRow.docs_updated || 0,
       context_used: dbRow.context_used || 0,
       velocity_score: dbRow.velocity_score || 0,
     };

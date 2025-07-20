@@ -51,6 +51,7 @@ export interface SessionMetrics {
   tests_written: number;
   tests_passing: number;
   documentation_updated: boolean;
+  docs_updated: number;
   context_used: number;
   velocity_score: number;
 }

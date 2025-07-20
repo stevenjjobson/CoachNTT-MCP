@@ -107,6 +107,21 @@ CREATE TABLE IF NOT EXISTS quick_actions (
   updated_at INTEGER NOT NULL
 );
 
+-- Documentation tracking table
+CREATE TABLE IF NOT EXISTS documentations (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL,
+  doc_type TEXT CHECK(doc_type IN ('readme', 'api', 'architecture', 'handoff')) NOT NULL,
+  file_path TEXT NOT NULL,
+  generated_at INTEGER NOT NULL,
+  word_count INTEGER NOT NULL,
+  sections TEXT, -- JSON array
+  "references" TEXT, -- JSON array
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_name);
 CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
@@ -115,4 +130,6 @@ CREATE INDEX IF NOT EXISTS idx_context_usage_session ON context_usage(session_id
 CREATE INDEX IF NOT EXISTS idx_reality_snapshots_session ON reality_snapshots(session_id);
 CREATE INDEX IF NOT EXISTS idx_blockers_session ON blockers(session_id);
 CREATE INDEX IF NOT EXISTS idx_blockers_project ON blockers(project_id);
+CREATE INDEX IF NOT EXISTS idx_documentations_session ON documentations(session_id);
+CREATE INDEX IF NOT EXISTS idx_documentations_type ON documentations(doc_type);
 `;

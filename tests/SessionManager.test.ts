@@ -4,33 +4,24 @@ import { DatabaseConnection } from '../src/database';
 import { SessionStartParams, Session, CheckpointParams } from '../src/interfaces';
 import { rmSync, existsSync } from 'fs';
 import { join } from 'path';
+import { setupTestDatabase, cleanupTestDatabase } from './helpers/database';
 
 describe('SessionManager', () => {
   let sessionManager: SessionManager;
-  const testDbPath = join(process.cwd(), 'data', 'myworkflow.db');
-  const testDbDir = join(process.cwd(), 'data');
+  const testDbPath = join(process.cwd(), 'test-data', 'test.db');
+  const testDbDir = join(process.cwd(), 'test-data');
 
   beforeEach(() => {
-    // Reset database singleton
-    (DatabaseConnection as any).resetInstance();
+    // Set up test database
+    setupTestDatabase();
     
-    // Clean up any existing test database
-    if (existsSync(testDbPath)) {
-      rmSync(testDbPath);
-    }
-    
-    // Create fresh session manager (which will create new DB)
+    // Create fresh session manager
     sessionManager = new SessionManager();
   });
 
   afterEach(() => {
-    // Reset database singleton
-    (DatabaseConnection as any).resetInstance();
-    
     // Clean up test database
-    if (existsSync(testDbPath)) {
-      rmSync(testDbPath);
-    }
+    cleanupTestDatabase();
   });
 
   describe('startSession', () => {
