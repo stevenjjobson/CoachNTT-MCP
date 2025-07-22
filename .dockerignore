@@ -1,0 +1,63 @@
+# Dependencies
+node_modules
+*/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp
+.pnp.js
+
+# Build outputs
+dist
+*/dist
+build
+*/build
+
+# Development files
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs
+*.md
+LICENSE
+
+# Test files
+tests
+*.test.ts
+*.spec.ts
+coverage
+.nyc_output
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Docker files (avoid recursive copy)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Data directories (will be mounted as volumes)
+data
+logs
+projects
+backups
+
+# UI specific (for server image)
+ui/node_modules
+ui/dist
+ui/.env*
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.log

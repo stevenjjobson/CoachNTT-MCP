@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "coachntt": {
+      "command": "node",
+      "args": ["/mnt/c/Users/Steve/OneDrive/Documents/Development/CoachNTT-MCP/dist/index.js"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}

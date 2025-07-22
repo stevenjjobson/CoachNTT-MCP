@@ -5,15 +5,35 @@ import { SessionStartParams, Session, CheckpointParams } from '../src/interfaces
 import { rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { setupTestDatabase, cleanupTestDatabase } from './helpers/database';
+import { execSync } from 'child_process';
+
+// Mock child_process module
+jest.mock('child_process', () => ({
+  execSync: jest.fn(),
+}));
 
 describe('SessionManager', () => {
   let sessionManager: SessionManager;
   const testDbPath = join(process.cwd(), 'test-data', 'test.db');
   const testDbDir = join(process.cwd(), 'test-data');
+  const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
 
   beforeEach(() => {
     // Set up test database
     setupTestDatabase();
+    
+    // Reset mocks
+    mockExecSync.mockReset();
+    mockExecSync.mockImplementation((cmd: string) => {
+      // Mock git operations
+      if (cmd.includes('git status')) {
+        return 'On branch main\nnothing to commit' as any;
+      }
+      if (cmd.includes('git add') || cmd.includes('git commit')) {
+        return '' as any;
+      }
+      return '' as any;
+    });
     
     // Create fresh session manager
     sessionManager = new SessionManager();

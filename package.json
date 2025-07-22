@@ -1,7 +1,7 @@
 {
   "name": "coachntt-mcp",
   "version": "1.0.0",
-  "description": "An intelligent Model Context Protocol (MCP) server that revolutionizes AI-assisted development through context-aware session management, reality-based documentation, and automated productivity optimization.",
+  "description": "The essential MCP server for Claude Code that enhances AI development through intelligent context management, automated checkpointing, reality checking, and proven productivity patterns for 50%+ efficiency gains.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "directories": {
@@ -9,18 +9,34 @@
   },
   "scripts": {
     "build": "tsc",
+    "build:ui": "cd ui && npm run build",
+    "build:all": "npm run build && npm run build:ui",
     "dev": "tsx src/index.ts",
+    "dev:ui": "cd ui && npm run dev",
+    "dev:all": "./scripts/dev.sh",
     "start": "node dist/index.js",
+    "start:server": "node dist/server.js",
+    "start:ui": "cd ui && npm run preview",
     "test": "jest",
     "lint": "eslint src --ext .ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "install:all": "npm install && cd ui && npm install",
+    "docker:dev": "./scripts/docker-dev.sh",
+    "docker:build": "./scripts/docker-build.sh",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:deploy": "./scripts/deploy-vps.sh"
   },
   "keywords": [
     "mcp",
     "model-context-protocol",
-    "ai",
-    "development",
-    "productivity"
+    "claude-code",
+    "claude",
+    "ai-development",
+    "context-management",
+    "productivity",
+    "checkpointing"
   ],
   "author": "Steve",
   "license": "ISC",
@@ -30,12 +46,14 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.16.0",
     "better-sqlite3": "^11.10.0",
+    "glob": "^10.3.10",
     "rxjs": "^7.8.2",
     "uuid": "^11.1.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
+    "@types/glob": "^8.1.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.0.15",
     "@types/uuid": "^10.0.0",

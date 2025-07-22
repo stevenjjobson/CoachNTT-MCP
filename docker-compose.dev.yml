@@ -1,0 +1,45 @@
+services:
+  # WebSocket/HTTP Server (Development)
+  websocket-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: coachntt-websocket-dev
+    volumes:
+      # Persistent data
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./projects:/app/projects
+      - ./docs/generated:/app/docs/generated
+      - ./templates:/app/templates
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - MCP_WEBSOCKET_AUTH=${MCP_WEBSOCKET_AUTH:-myworkflow-secret}
+      - DB_PATH=/app/data/myworkflow.db
+    
+  # UI Dashboard (Development with hot reload)
+  ui-dashboard:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile.dev
+    container_name: coachntt-ui-dev
+    ports:
+      - "5174:5173"  # Map to 5174 to avoid conflicts
+    volumes:
+      # Mount source for hot reload
+      - ./ui/src:/app/src
+      - ./ui/public:/app/public
+      - ./ui/index.html:/app/index.html
+      - ./ui/vite.config.ts:/app/vite.config.ts
+      - ./ui/tsconfig.json:/app/tsconfig.json
+      - ./ui/tsconfig.node.json:/app/tsconfig.node.json
+      - ./ui/tailwind.config.js:/app/tailwind.config.js
+      - ./ui/postcss.config.js:/app/postcss.config.js
+      # Exclude node_modules
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_WS_URL=ws://localhost:8080
+    depends_on:
+      - websocket-server

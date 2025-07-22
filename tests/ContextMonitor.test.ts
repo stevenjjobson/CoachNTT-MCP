@@ -4,15 +4,35 @@ import { SessionManager } from '../src/managers/SessionManager';
 import { DatabaseConnection } from '../src/database';
 import { SessionStartParams } from '../src/interfaces';
 import { setupTestDatabase, cleanupTestDatabase } from './helpers/database';
+import { execSync } from 'child_process';
+
+// Mock child_process module
+jest.mock('child_process', () => ({
+  execSync: jest.fn(),
+}));
 
 describe('ContextMonitor', () => {
   let contextMonitor: ContextMonitor;
   let sessionManager: SessionManager;
   let sessionId: string;
+  const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
 
   beforeEach(async () => {
     // Setup test database
     setupTestDatabase();
+    
+    // Reset mocks
+    mockExecSync.mockReset();
+    mockExecSync.mockImplementation((cmd: string) => {
+      // Mock git operations
+      if (cmd.includes('git status')) {
+        return 'On branch main\nnothing to commit' as any;
+      }
+      if (cmd.includes('git add') || cmd.includes('git commit')) {
+        return '' as any;
+      }
+      return '' as any;
+    });
     
     // Create managers
     contextMonitor = new ContextMonitor();

@@ -6,6 +6,7 @@ import { RealityChecker } from '../managers/RealityChecker';
 import { ProjectTracker } from '../managers/ProjectTracker';
 import { DocumentationEngine } from '../managers/DocumentationEngine';
 import { Subscription } from 'rxjs';
+import { ToolExecutionHandler, ToolExecutionRequest } from './handlers';
 
 interface ClientConnection {
   id: string;
@@ -15,17 +16,20 @@ interface ClientConnection {
 }
 
 interface WebSocketMessage {
-  type: 'subscribe' | 'unsubscribe' | 'authenticate' | 'ping';
+  type: 'subscribe' | 'unsubscribe' | 'authenticate' | 'ping' | 'execute';
   topic?: string;
   auth?: string;
   params?: Record<string, any>;
+  tool?: string;
+  requestId?: string;
 }
 
 interface WebSocketResponse {
-  type: 'event' | 'error' | 'auth' | 'pong';
+  type: 'event' | 'error' | 'auth' | 'pong' | 'result';
   topic?: string;
   data?: any;
   error?: string;
+  requestId?: string;
 }
 
 export class MyWorkFlowWebSocketServer {
@@ -39,6 +43,7 @@ export class MyWorkFlowWebSocketServer {
     project: ProjectTracker;
     documentation: DocumentationEngine;
   };
+  private toolHandler: ToolExecutionHandler;
 
   constructor(port: number = 8080) {
     this.httpServer = createServer();
@@ -52,6 +57,9 @@ export class MyWorkFlowWebSocketServer {
       project: new ProjectTracker(),
       documentation: new DocumentationEngine(),
     };
+    
+    // Initialize tool handler
+    this.toolHandler = new ToolExecutionHandler(this.managers);
 
     this.setupWebSocketHandlers();
     this.httpServer.listen(port, () => {
@@ -133,6 +141,20 @@ export class MyWorkFlowWebSocketServer {
       
       case 'ping':
         this.sendMessage(client, { type: 'pong' });
+        break;
+      
+      case 'execute':
+        if (!client.authenticated) {
+          this.sendError(client, 'Authentication required');
+          return;
+        }
+        if (message.tool && message.requestId) {
+          this.handleToolExecution(client, {
+            tool: message.tool,
+            params: message.params || {},
+            requestId: message.requestId,
+          });
+        }
         break;
       
       default:
@@ -263,6 +285,50 @@ export class MyWorkFlowWebSocketServer {
 
   private generateClientId(): string {
     return `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private async handleToolExecution(client: ClientConnection, request: ToolExecutionRequest): Promise<void> {
+    try {
+      const response = await this.toolHandler.execute(request);
+      
+      this.sendMessage(client, {
+        type: 'result',
+        requestId: request.requestId,
+        data: response,
+      });
+      
+      // Broadcast state updates after tool execution
+      this.broadcastStateUpdates();
+    } catch (error) {
+      this.sendMessage(client, {
+        type: 'error',
+        requestId: request.requestId,
+        error: error instanceof Error ? error.message : 'Tool execution failed',
+      });
+    }
+  }
+  
+  private broadcastStateUpdates(): void {
+    // Broadcast updated states to all subscribed clients
+    const topics = [
+      'session.status',
+      'context.status',
+      'reality.checks',
+      'project.status',
+      'project.velocity',
+      'documentation.status',
+    ];
+    
+    topics.forEach(topic => {
+      this.clients.forEach(client => {
+        if (client.authenticated && client.subscriptions.has(topic)) {
+          // Re-fetch and send updated data
+          this.handleSubscribe(client, topic).catch(err => {
+            console.error(`Failed to broadcast update for ${topic}:`, err);
+          });
+        }
+      });
+    });
   }
 
   public async close(): Promise<void> {

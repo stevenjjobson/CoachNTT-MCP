@@ -6,6 +6,12 @@ import { SessionStartParams, RealityCheckParams, ValidatedMetric } from '../src/
 import { rmSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { setupTestDatabase, cleanupTestDatabase } from './helpers/database';
+import { execSync } from 'child_process';
+
+// Mock child_process module
+jest.mock('child_process', () => ({
+  execSync: jest.fn(),
+}));
 
 describe('RealityChecker', () => {
   let realityChecker: RealityChecker;
@@ -13,10 +19,24 @@ describe('RealityChecker', () => {
   let sessionId: string;
   const testDbPath = join(process.cwd(), 'test-data', 'test.db');
   const testProjectPath = join(process.cwd(), 'test-project');
+  const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
 
   beforeEach(async () => {
     // Set up test database
     setupTestDatabase();
+    
+    // Reset mocks
+    mockExecSync.mockReset();
+    mockExecSync.mockImplementation((cmd: string) => {
+      // Mock git operations
+      if (cmd.includes('git status')) {
+        return 'On branch main\nnothing to commit' as any;
+      }
+      if (cmd.includes('git add') || cmd.includes('git commit')) {
+        return '' as any;
+      }
+      return '' as any;
+    });
     
     // Create test project directory
     if (!existsSync(testProjectPath)) {
