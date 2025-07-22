@@ -127,7 +127,9 @@ export class MyWorkFlowWebSocketServer {
           return;
         }
         if (message.topic) {
+          console.log(`Client ${client.id} subscribing to topic: ${message.topic}`);
           this.handleSubscribe(client, message.topic, message.params).catch(err => {
+            console.error(`Subscription error for client ${client.id}:`, err);
             this.sendError(client, `Subscription error: ${err.message}`);
           });
         }
@@ -164,13 +166,16 @@ export class MyWorkFlowWebSocketServer {
 
   private handleAuthentication(client: ClientConnection, auth?: string): void {
     // Simple authentication - in production, implement proper auth
-    if (auth === 'myworkflow-secret') {
+    // Accept both keys for backwards compatibility
+    if (auth === 'myworkflow-secret' || auth === 'dev-secret-key-123') {
       client.authenticated = true;
+      console.log(`Client ${client.id} authenticated successfully`);
       this.sendMessage(client, {
         type: 'auth',
         data: { authenticated: true, message: 'Authentication successful' },
       });
     } else {
+      console.log(`Client ${client.id} authentication failed with key: ${auth}`);
       this.sendMessage(client, {
         type: 'auth',
         data: { authenticated: false, message: 'Authentication failed' },
@@ -192,6 +197,7 @@ export class MyWorkFlowWebSocketServer {
       case 'session.status':
         // Subscribe to session updates
         subscription = this.managers.session.getCurrentSession().subscribe(session => {
+          console.log(`Sending session update to client ${client.id}:`, session);
           this.sendEvent(client, topic, { session });
         });
         
@@ -304,6 +310,7 @@ export class MyWorkFlowWebSocketServer {
       });
       
       // Broadcast state updates after tool execution
+      console.log(`Tool ${request.tool} executed successfully, broadcasting updates`);
       this.broadcastStateUpdates();
     } catch (error) {
       this.sendMessage(client, {

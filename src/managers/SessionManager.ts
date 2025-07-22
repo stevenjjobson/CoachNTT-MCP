@@ -150,10 +150,12 @@ export class SessionManager {
       };
       
       // Update observables
+      console.log('Session created, updating observables:', session);
       this.currentSession$.next(session);
       this.sessionMetrics$.next(initialMetrics);
       this.contextStatus$.next({ used: 0, total: contextPlan.total_budget, percent: 0 });
       
+      console.log('Session manager: New session started:', session.id);
       return session;
     });
   }

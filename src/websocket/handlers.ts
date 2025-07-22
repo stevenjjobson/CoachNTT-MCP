@@ -39,16 +39,18 @@ export class ToolExecutionHandler {
       switch (tool) {
         // Session Tools
         case 'startSession':
+          console.log('Starting new session with params:', params);
           result = await this.managers.session.startSession({
-            project_name: params.projectName,
-            session_type: params.type,
-            estimated_scope: {
+            project_name: params.projectName || params.project_name,
+            session_type: params.type || params.session_type,
+            estimated_scope: params.estimated_scope || {
               lines_of_code: params.estimatedLines || 100,
               test_coverage: params.estimatedTests || 80,
               documentation: 3,
             },
-            context_budget: params.contextBudget,
+            context_budget: params.contextBudget || params.context_budget,
           });
+          console.log('Session created:', result);
           break;
           
         case 'getActiveSession':

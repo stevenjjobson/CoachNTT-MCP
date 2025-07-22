@@ -120,6 +120,8 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 }
 
 function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<DashboardAction>) {
+  console.log('WebSocket message received:', message);
+  
   if (message.type === 'auth' && message.data?.authenticated) {
     dispatch({ type: 'SET_AUTHENTICATED', payload: true });
     return;
@@ -128,6 +130,7 @@ function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<Das
   if (message.type === 'event' && message.topic) {
     switch (message.topic) {
       case 'session.status':
+        console.log('Session status update:', message.data.session);
         dispatch({ type: 'SET_SESSION', payload: message.data.session });
         break;
       

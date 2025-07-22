@@ -49,18 +49,39 @@ export default function SessionOverview() {
       <div className="card p-6">
         <h2 className="text-lg font-semibold mb-4">No Active Session</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-4">
-          Start a new session through Claude Code to begin tracking your development progress.
+          Start a new session to begin tracking your development progress.
         </p>
-        <button
-          className="btn-primary"
-          onClick={() => {
-            // This would typically open Claude Code or show instructions
-            alert('Start a new session in Claude Code with:\n\n"Let\'s start a new development session for my project"');
-          }}
-        >
-          <Play className="h-4 w-4 mr-2" />
-          Start New Session
-        </button>
+        <div className="space-y-4">
+          <button
+            className="btn-primary w-full"
+            onClick={async () => {
+              setLoading('start');
+              try {
+                // Quick start with default values
+                console.log('[SessionOverview] Starting new session...');
+                const result = await tools.startSession(
+                  'MyProject',
+                  'feature',
+                  { lines_of_code: 100, test_coverage: 80, documentation: 3 }
+                );
+                console.log('[SessionOverview] Session started successfully:', result);
+                // The session update should come through WebSocket
+              } catch (error) {
+                console.error('[SessionOverview] Failed to start session:', error);
+                alert(`Failed to start session: ${error instanceof Error ? error.message : 'Unknown error'}`);
+              } finally {
+                setLoading(null);
+              }
+            }}
+            disabled={loading === 'start'}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            {loading === 'start' ? 'Starting...' : 'Quick Start Session'}
+          </button>
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
+            Or start through Claude Code with: "Let's start a new development session"
+          </p>
+        </div>
       </div>
     );
   }

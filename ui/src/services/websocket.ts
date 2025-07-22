@@ -69,7 +69,7 @@ export class WebSocketService {
   private authenticate(): void {
     this.send({
       type: 'authenticate',
-      auth: 'myworkflow-secret', // In production, get from config
+      auth: 'dev-secret-key-123', // In production, get from config
     });
   }
 
@@ -81,6 +81,7 @@ export class WebSocketService {
 
     // Handle tool execution results
     if (message.type === 'result' && message.requestId) {
+      console.log('Tool execution result:', message);
       const pending = this.pendingRequests.get(message.requestId);
       if (pending) {
         this.pendingRequests.delete(message.requestId);
@@ -115,6 +116,7 @@ export class WebSocketService {
       'suggestions.actions',
     ];
 
+    console.log('Subscribing to topics:', topics);
     topics.forEach(topic => {
       this.send({
         type: 'subscribe',
