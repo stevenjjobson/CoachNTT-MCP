@@ -6,13 +6,15 @@ export type ConnectionHandler = (connected: boolean) => void;
 export class WebSocketService {
   private ws: WebSocket | null = null;
   private url: string;
-  private reconnectTimeout: number = 5000;
+  private baseReconnectTimeout: number = 1000; // Start at 1 second
+  private maxReconnectTimeout: number = 30000; // Max 30 seconds
   private reconnectAttempts: number = 0;
   private maxReconnectAttempts: number = 10;
   private messageHandlers: Set<MessageHandler> = new Set();
   private connectionHandlers: Set<ConnectionHandler> = new Set();
   private authenticated: boolean = false;
   private pendingRequests: Map<string, { resolve: (value: any) => void; reject: (error: any) => void }> = new Map();
+  private reconnectTimer: number | null = null;
 
   constructor(url: string = 'ws://localhost:8080') {
     this.url = url;
@@ -38,6 +40,7 @@ export class WebSocketService {
     this.ws.onopen = () => {
       console.log('WebSocket connected');
       this.reconnectAttempts = 0;
+      this.clearReconnectTimer();
       this.notifyConnectionHandlers(true);
       this.authenticate();
     };
@@ -127,11 +130,26 @@ export class WebSocketService {
     }
 
     this.reconnectAttempts++;
-    console.log(`Reconnecting in ${this.reconnectTimeout}ms... (attempt ${this.reconnectAttempts})`);
     
-    setTimeout(() => {
+    // Calculate exponential backoff with jitter
+    const backoffTime = Math.min(
+      this.baseReconnectTimeout * Math.pow(2, this.reconnectAttempts - 1) + Math.random() * 1000,
+      this.maxReconnectTimeout
+    );
+    
+    console.log(`Reconnecting in ${Math.round(backoffTime)}ms... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    
+    this.clearReconnectTimer();
+    this.reconnectTimer = window.setTimeout(() => {
       this.connect();
-    }, this.reconnectTimeout);
+    }, backoffTime);
+  }
+  
+  private clearReconnectTimer(): void {
+    if (this.reconnectTimer !== null) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
   }
 
   send(data: any): void {
@@ -157,6 +175,7 @@ export class WebSocketService {
   }
 
   disconnect(): void {
+    this.clearReconnectTimer();
     if (this.ws) {
       this.ws.close();
       this.ws = null;

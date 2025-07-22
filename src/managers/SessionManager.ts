@@ -2,6 +2,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { randomUUID } from 'crypto';
 import { DatabaseConnection } from '../database';
 import { ContextMonitor } from './ContextMonitor';
+import { SessionNotFoundError, InvalidParametersError, DatabaseError } from '../utils/errors';
 import {
   Session,
   SessionStartParams,
@@ -161,7 +162,7 @@ export class SessionManager {
     // Handle async context tracking outside of transaction
     const session = this.getSessionFromDb(params.session_id);
     if (!session) {
-      throw new Error(`Session ${params.session_id} not found`);
+      throw new SessionNotFoundError(params.session_id);
     }
     
     if (session.status !== 'active') {
@@ -282,7 +283,7 @@ export class SessionManager {
     return this.db.transaction(() => {
       const session = this.getSessionFromDb(params.session_id);
       if (!session) {
-        throw new Error(`Session ${params.session_id} not found`);
+        throw new SessionNotFoundError(params.session_id);
       }
       
       // Generate handoff document
@@ -333,7 +334,7 @@ export class SessionManager {
   async getSessionStatus(params: { session_id: string }): Promise<Session> {
     const session = this.getSessionFromDb(params.session_id);
     if (!session) {
-      throw new Error(`Session ${params.session_id} not found`);
+      throw new SessionNotFoundError(params.session_id);
     }
     return this.buildSessionObject(session);
   }
@@ -342,7 +343,7 @@ export class SessionManager {
     return this.db.transaction(() => {
       const session = this.getSessionFromDb(sessionId);
       if (!session) {
-        throw new Error(`Session ${sessionId} not found`);
+        throw new SessionNotFoundError(sessionId);
       }
       
       const now = Date.now();
@@ -413,15 +414,18 @@ export class SessionManager {
     return sessions.map(s => this.buildSessionObject(s));
   }
 
-  async executeQuickAction(params: { action_id: string; params?: unknown }): Promise<unknown> {
+  async executeQuickAction(params: { action_id: string; params?: unknown; session_id?: string }): Promise<unknown> {
     const action = this.db.get(
       'SELECT * FROM quick_actions WHERE id = ?',
       params.action_id
-    );
+    ) as any;
     
     if (!action) {
-      throw new Error(`Quick action ${params.action_id} not found`);
+      throw new InvalidParametersError(`Quick action '${params.action_id}' not found. Use suggestActions to see available actions.`);
     }
+    
+    // Get current session if provided
+    const session = params.session_id ? this.getSessionFromDb(params.session_id) : null;
     
     // Update usage count
     const updateAction = this.db.prepare(
@@ -429,18 +433,79 @@ export class SessionManager {
     );
     updateAction.run(Date.now(), params.action_id);
     
-    // TODO: Execute tool sequence
-    return {
-      action_id: params.action_id,
-      executed: true,
-      result: 'Quick action execution not yet implemented',
-    };
+    // Parse and execute the tool sequence
+    const toolSequence = JSON.parse(action.tool_sequence);
+    const parameterTemplate = JSON.parse(action.parameter_template);
+    const results = [];
+    
+    try {
+      for (const tool of toolSequence) {
+        // Merge template parameters with any provided parameters
+        const toolParams = {
+          ...parameterTemplate[tool.name] || {},
+          ...params.params || {},
+          session_id: params.session_id || (session ? session.id : undefined),
+        };
+        
+        // Execute the tool based on its name
+        let result;
+        switch (tool.name) {
+          case 'checkpoint':
+            result = await this.createCheckpoint({
+              session_id: toolParams.session_id,
+              completed_components: toolParams.completed_components || ['Quick action checkpoint'],
+              metrics: toolParams.metrics || (session ? {
+                lines_written: session.actual_lines,
+                tests_passing: session.actual_tests,
+                context_used_percent: (session.context_used / session.context_budget) * 100,
+              } : {
+                lines_written: 0,
+                tests_passing: 0,
+                context_used_percent: 0,
+              }),
+              commit_message: toolParams.commit_message || `Quick action: ${action.name}`,
+            });
+            break;
+            
+          case 'reality_check':
+            result = await this.contextMonitor.getStatus({ session_id: toolParams.session_id });
+            break;
+            
+          case 'context_status':
+            result = await this.contextMonitor.getStatus({ session_id: toolParams.session_id });
+            break;
+            
+          default:
+            throw new Error(`Unknown tool in sequence: ${tool.name}`);
+        }
+        
+        results.push({
+          tool: tool.name,
+          success: true,
+          result,
+        });
+      }
+      
+      return {
+        action_id: params.action_id,
+        executed: true,
+        results,
+        message: `Successfully executed ${action.name}`,
+      };
+    } catch (error) {
+      return {
+        action_id: params.action_id,
+        executed: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        results,
+      };
+    }
   }
 
   async suggestActions(params: { session_id: string; limit?: number }): Promise<unknown> {
     const session = this.getSessionFromDb(params.session_id);
     if (!session) {
-      throw new Error(`Session ${params.session_id} not found`);
+      throw new SessionNotFoundError(params.session_id);
     }
     
     const limit = params.limit || 5;
@@ -468,18 +533,75 @@ export class SessionManager {
     return suggestions.slice(0, limit);
   }
 
-  async defineCustomAction(params: unknown): Promise<unknown> {
-    // TODO: Implement custom action definition
-    return {
-      success: false,
-      message: 'Custom action definition not yet implemented',
-    };
+  async defineCustomAction(params: any): Promise<unknown> {
+    // Validate required parameters
+    if (!params.name || !params.description || !params.tool_sequence) {
+      const missing = [];
+      if (!params.name) missing.push('name');
+      if (!params.description) missing.push('description');
+      if (!params.tool_sequence) missing.push('tool_sequence');
+      throw new InvalidParametersError('Missing required parameters for custom action', missing);
+    }
+    
+    // Generate unique action ID
+    const actionId = `custom_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Validate tool sequence
+    const toolSequence = Array.isArray(params.tool_sequence) ? params.tool_sequence : [];
+    if (toolSequence.length === 0) {
+      throw new Error('Tool sequence cannot be empty');
+    }
+    
+    // Prepare parameter template from the tool sequence
+    const parameterTemplate: Record<string, any> = {};
+    toolSequence.forEach((step: any) => {
+      if (step.tool && step.params) {
+        parameterTemplate[step.tool] = step.params;
+      }
+    });
+    
+    // Insert custom action into database
+    const stmt = this.db.prepare(`
+      INSERT INTO quick_actions (
+        id, name, description, tool_sequence, parameter_template,
+        keyboard_shortcut, ui_group, usage_count, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    try {
+      stmt.run(
+        actionId,
+        params.name,
+        params.description,
+        JSON.stringify(toolSequence),
+        JSON.stringify(parameterTemplate),
+        params.keyboard_shortcut || null,
+        params.ui_group || 'custom',
+        0,
+        Date.now(),
+        Date.now()
+      );
+      
+      return {
+        success: true,
+        action_id: actionId,
+        name: params.name,
+        description: params.description,
+        tool_count: toolSequence.length,
+        message: `Custom action "${params.name}" created successfully`,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new DatabaseError('create custom action', error);
+      }
+      throw error;
+    }
   }
 
   async updateUIState(params: { session_id: string; ui_state: Session['ui_state'] }): Promise<unknown> {
     const session = this.getSessionFromDb(params.session_id);
     if (!session) {
-      throw new Error(`Session ${params.session_id} not found`);
+      throw new SessionNotFoundError(params.session_id);
     }
     
     // Store UI state (would need to add column to sessions table)
@@ -512,7 +634,7 @@ export class SessionManager {
   async getDebugState(params: { session_id: string; include_sensitive?: boolean }): Promise<unknown> {
     const session = this.getSessionFromDb(params.session_id);
     if (!session) {
-      throw new Error(`Session ${params.session_id} not found`);
+      throw new SessionNotFoundError(params.session_id);
     }
     
     const checkpoints = this.getSessionCheckpoints(params.session_id);

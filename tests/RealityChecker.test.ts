@@ -243,9 +243,8 @@ describe('RealityChecker', () => {
       const allIds = checkResult.discrepancies.map((d, idx) => `fix_${idx}`);
       
       const fixResult = await realityChecker.applyFixes({
-        check_id: checkResult.check_id,
-        discrepancy_ids: allIds,
-        safe_mode: true,
+        snapshot_id: checkResult.snapshot_id,
+        fix_ids: allIds,
       });
       
       // Check that some fixes were applied
@@ -282,7 +281,7 @@ describe('RealityChecker', () => {
     it('should emit check results via observable', async () => {
       let emittedResult: any = null;
       
-      realityChecker.getCheckResults().subscribe(result => {
+      (realityChecker as any).checkResults$.subscribe((result: any) => {
         emittedResult = result;
       });
       
