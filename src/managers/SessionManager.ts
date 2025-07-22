@@ -1118,7 +1118,7 @@ export class SessionManager {
       ],
     };
     
-    return {
+    const session: Session = {
       id: dbRow.id,
       project_name: dbRow.project_name,
       session_type: dbRow.session_type,
@@ -1140,6 +1140,21 @@ export class SessionManager {
         layout: 'card',
       },
     };
+    
+    // Add any additional properties that the UI might expect
+    // These will be included in the returned object but not in the typed Session
+    return {
+      ...session,
+      // UI-specific fields that aren't in the Session interface
+      project_id: dbRow.project_name,
+      type: dbRow.session_type,
+      estimated_end_time: dbRow.estimated_completion,
+      estimated_lines: dbRow.estimated_lines,
+      actual_lines: dbRow.actual_lines || 0,
+      estimated_tests: dbRow.estimated_tests,
+      actual_tests: dbRow.actual_tests || 0,
+      context_budget: dbRow.context_budget,
+    } as any;
   }
   
   private buildMetricsObject(dbRow: any): SessionMetrics {

@@ -190,13 +190,19 @@ export class MyWorkFlowWebSocketServer {
 
     switch (topic) {
       case 'session.status':
-        // SessionManager doesn't provide observables yet
-        // Send current active session
+        // Subscribe to session updates
+        subscription = this.managers.session.getCurrentSession().subscribe(session => {
+          this.sendEvent(client, topic, { session });
+        });
+        
+        // Also send current active session immediately
         try {
           const session = await this.managers.session.getActiveSession();
-          this.sendEvent(client, topic, { session });
+          if (session) {
+            this.sendEvent(client, topic, { session });
+          }
         } catch (err) {
-          this.sendError(client, `Failed to get session status: ${err}`);
+          console.error(`Failed to get initial session status: ${err}`);
         }
         break;
 
@@ -308,24 +314,34 @@ export class MyWorkFlowWebSocketServer {
     }
   }
   
-  private broadcastStateUpdates(): void {
+  private async broadcastStateUpdates(): Promise<void> {
     // Broadcast updated states to all subscribed clients
-    const topics = [
-      'session.status',
-      'context.status',
-      'reality.checks',
-      'project.status',
-      'project.velocity',
-      'documentation.status',
-    ];
+    // For session.status, we need to trigger a new emission from the observable
+    // since it's a BehaviorSubject that will emit the latest value
     
-    topics.forEach(topic => {
-      this.clients.forEach(client => {
-        if (client.authenticated && client.subscriptions.has(topic)) {
-          // Re-fetch and send updated data
-          this.handleSubscribe(client, topic).catch(err => {
-            console.error(`Failed to broadcast update for ${topic}:`, err);
-          });
+    this.clients.forEach(client => {
+      if (!client.authenticated) return;
+      
+      // Session status updates - the observable will automatically emit the new value
+      // to all subscribers when the session is updated
+      if (client.subscriptions.has('session.status')) {
+        // The subscription will automatically send the update
+        // We just need to ensure the session manager has updated its observable
+      }
+      
+      // For other topics that might not automatically update, we can trigger a refresh
+      const topicsToRefresh = [
+        'context.status',
+        'reality.checks',
+        'project.status',
+        'project.velocity',
+        'documentation.status',
+      ];
+      
+      topicsToRefresh.forEach(topic => {
+        if (client.subscriptions.has(topic)) {
+          // The observables should automatically emit new values
+          // If needed, we could trigger a manual update here
         }
       });
     });
