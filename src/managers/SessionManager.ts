@@ -150,8 +150,14 @@ export class SessionManager {
       };
       
       // Update observables
-      console.log('Session created, updating observables:', session);
+      console.log('[SessionManager] Session created, updating observables:', {
+        sessionId: session.id,
+        projectName: session.project_name,
+        type: session.session_type,
+        status: session.status
+      });
       this.currentSession$.next(session);
+      console.log('[SessionManager] currentSession$ updated with session:', session);
       this.sessionMetrics$.next(initialMetrics);
       this.contextStatus$.next({ used: 0, total: contextPlan.total_budget, percent: 0 });
       

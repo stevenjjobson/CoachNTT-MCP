@@ -196,8 +196,13 @@ export class MyWorkFlowWebSocketServer {
     switch (topic) {
       case 'session.status':
         // Subscribe to session updates
+        console.log(`[WebSocket] Client ${client.id} subscribing to session.status observable`);
         subscription = this.managers.session.getCurrentSession().subscribe(session => {
-          console.log(`Sending session update to client ${client.id}:`, session);
+          console.log(`[WebSocket] Observable emitted session update for client ${client.id}:`, {
+            hasSession: !!session,
+            sessionId: session?.id,
+            sessionStatus: session?.status
+          });
           this.sendEvent(client, topic, { session });
         });
         
@@ -269,6 +274,11 @@ export class MyWorkFlowWebSocketServer {
   }
 
   private sendEvent(client: ClientConnection, topic: string, data: any): void {
+    console.log(`[WebSocket] Sending event to client ${client.id}:`, {
+      type: 'event',
+      topic,
+      data: JSON.stringify(data, null, 2)
+    });
     this.sendMessage(client, {
       type: 'event',
       topic,

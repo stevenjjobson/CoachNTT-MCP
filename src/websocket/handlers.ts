@@ -33,13 +33,42 @@ export class ToolExecutionHandler {
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionResponse> {
     const { tool, params, requestId } = request;
     
+    // Map UI tool names to MCP tool names
+    const toolNameMapping: Record<string, string> = {
+      'startSession': 'session_start',
+      'getActiveSession': 'session_status',
+      'createCheckpoint': 'session_checkpoint',
+      'createHandoff': 'session_handoff',
+      'completeSession': 'session_complete',
+      'trackContext': 'context_track',
+      'optimizeContext': 'context_optimize',
+      'getContextReport': 'context_status',
+      'performRealityCheck': 'reality_check',
+      'applyFixes': 'reality_fix',
+      'getDiscrepancyReport': 'reality_status',
+      'initializeProject': 'project_track',
+      'getProjectStatus': 'project_status',
+      'updateProjectMetrics': 'project_update',
+      'analyzeVelocity': 'velocity_analyze',
+      'trackBlocker': 'blocker_resolve',
+      'generateDocumentation': 'doc_generate',
+      'updateDocumentationContext': 'doc_update',
+      'validateDocumentation': 'doc_status',
+      'exportDocumentation': 'doc_export',
+      'suggestActions': 'suggest_actions',
+      'executeQuickAction': 'quick_action',
+    };
+    
+    const mcpToolName = toolNameMapping[tool] || tool;
+    console.log(`[ToolHandler] Mapping UI tool '${tool}' to MCP tool '${mcpToolName}'`);
+    
     try {
       let result: any;
       
       switch (tool) {
         // Session Tools
         case 'startSession':
-          console.log('Starting new session with params:', params);
+          console.log('[ToolHandler] Starting new session with params:', params);
           result = await this.managers.session.startSession({
             project_name: params.projectName || params.project_name,
             session_type: params.type || params.session_type,
@@ -50,7 +79,14 @@ export class ToolExecutionHandler {
             },
             context_budget: params.contextBudget || params.context_budget,
           });
-          console.log('Session created:', result);
+          console.log('[ToolHandler] Session created:', result);
+          
+          // After creating session, force a broadcast update
+          if (result && result.session) {
+            console.log('[ToolHandler] Broadcasting session update after creation');
+            // The session manager should automatically update its observable
+            // which will trigger updates to all subscribers
+          }
           break;
           
         case 'getActiveSession':

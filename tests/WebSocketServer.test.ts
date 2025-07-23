@@ -39,6 +39,9 @@ class TestWebSocketClient {
   async authenticate(token: string): Promise<boolean> {
     if (!this.ws || !this.connected) throw new Error('Not connected');
     
+    // Clear any existing messages (like welcome message)
+    this.clearMessages();
+    
     this.send({ type: 'authenticate', auth: token });
     
     // Wait for auth response

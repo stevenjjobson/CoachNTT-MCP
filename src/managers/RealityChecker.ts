@@ -278,7 +278,8 @@ export class RealityChecker {
         const components = JSON.parse(cp.completed_components || '[]');
         components.forEach((comp: string) => {
           // Extract file paths from component descriptions
-          const fileMatches = comp.match(/(\b\w+\/[\w\/]+\.\w+)/g);
+          // Match patterns like "index.ts", "src/file.js", "path/to/file.tsx"
+          const fileMatches = comp.match(/(\b[\w\/]*\.(?:ts|js|tsx|jsx|json|md|yml|yaml))/g);
           if (fileMatches) {
             fileMatches.forEach(f => claimedFiles.add(f));
           }
@@ -286,8 +287,13 @@ export class RealityChecker {
       });
       
       // Check if claimed files exist
+      const projectPath = process.cwd();
+      const isTest = process.env.NODE_ENV === 'test';
+      const basePath = isTest && process.env.TEST_PROJECT_PATH ? process.env.TEST_PROJECT_PATH : projectPath;
+      
       claimedFiles.forEach(file => {
-        if (!existsSync(file)) {
+        const fullPath = join(basePath, file);
+        if (!existsSync(fullPath)) {
           discrepancies.push({
             type: 'file_mismatch',
             severity: 'critical',
@@ -465,7 +471,8 @@ export class RealityChecker {
       }
     });
     
-    return Math.max(0, Math.min(100, score));
+    // Return value between 0 and 1
+    return Math.max(0, Math.min(100, score)) / 100;
   }
 
   private generateRecommendations(discrepancies: Discrepancy[], session: Session): string[] {
@@ -492,6 +499,13 @@ export class RealityChecker {
     // Phase-specific recommendations
     if (session.current_phase === 'implementation' && discrepancies.some(d => d.type === 'test_failure')) {
       recommendations.push('Fix failing tests before moving to next phase');
+    }
+    
+    // Always provide standard recommendations if none were generated
+    if (recommendations.length === 0) {
+      recommendations.push('Continue with current development plan');
+      recommendations.push('Run comprehensive check periodically');
+      recommendations.push('Create checkpoint at major milestones');
     }
     
     return recommendations;
@@ -549,16 +563,29 @@ export class RealityChecker {
 
   private countLinesOfCode(sessionId: string): number {
     try {
+      // Get the project path from session or use current working directory
+      const projectPath = process.cwd();
+      
+      // In test environment, only count files in the test project directory
+      const isTest = process.env.NODE_ENV === 'test';
+      const basePath = isTest && process.env.TEST_PROJECT_PATH ? process.env.TEST_PROJECT_PATH : projectPath;
+      
       // Get created/modified files from session
-      const srcFiles = glob.sync('src/**/*.{ts,js,tsx,jsx}', { ignore: ['**/*.test.*', '**/*.spec.*'] });
+      const srcFiles = glob.sync('**/*.{ts,js,tsx,jsx}', { 
+        cwd: basePath,
+        ignore: ['**/*.test.*', '**/*.spec.*', 'node_modules/**', 'dist/**', 'build/**']
+      });
       
       let totalLines = 0;
       srcFiles.forEach(file => {
-        const content = readFileSync(file, 'utf8');
-        const lines = content.split('\n').filter(line => 
-          line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('*')
-        );
-        totalLines += lines.length;
+        const fullPath = join(basePath, file);
+        if (existsSync(fullPath)) {
+          const content = readFileSync(fullPath, 'utf8');
+          const lines = content.split('\n').filter(line => 
+            line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('*')
+          );
+          totalLines += lines.length;
+        }
       });
       
       return totalLines;
@@ -570,13 +597,26 @@ export class RealityChecker {
 
   private async getActualTestMetrics(): Promise<{ total: number; passing: number }> {
     try {
-      const testFiles = glob.sync('**/*.{test,spec}.{ts,js,tsx,jsx}');
+      // Get the project path from session or use current working directory
+      const projectPath = process.cwd();
+      
+      // In test environment, only count files in the test project directory
+      const isTest = process.env.NODE_ENV === 'test';
+      const basePath = isTest && process.env.TEST_PROJECT_PATH ? process.env.TEST_PROJECT_PATH : projectPath;
+      
+      const testFiles = glob.sync('**/*.{test,spec}.{ts,js,tsx,jsx}', {
+        cwd: basePath,
+        ignore: ['node_modules/**', 'dist/**', 'build/**']
+      });
       const testCount = testFiles.length * 5; // Rough estimate
       
       // Try to get actual test results
       try {
-        const output = execSync('npm test -- --listTests', { encoding: 'utf8' });
-        const tests = output.split('\n').filter(line => line.includes('test') || line.includes('spec'));
+        const output = execSync('npm test -- --listTests', { 
+          encoding: 'utf8',
+          cwd: basePath 
+        });
+        const tests = output.split('\n').filter(line => line.trim() && (line.includes('test') || line.includes('spec')));
         return { total: tests.length, passing: tests.length }; // Assume all pass if command succeeds
       } catch {
         return { total: testCount, passing: 0 };

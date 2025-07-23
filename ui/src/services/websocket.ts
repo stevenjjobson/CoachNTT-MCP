@@ -116,8 +116,9 @@ export class WebSocketService {
       'suggestions.actions',
     ];
 
-    console.log('Subscribing to topics:', topics);
+    console.log('[WebSocket] Subscribing to topics:', topics);
     topics.forEach(topic => {
+      console.log(`[WebSocket] Sending subscribe request for topic: ${topic}`);
       this.send({
         type: 'subscribe',
         topic,

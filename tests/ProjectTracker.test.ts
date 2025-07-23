@@ -216,13 +216,19 @@ describe('ProjectTracker', () => {
 
     it('should detect improving velocity trend', async () => {
       // Mock sessions with improving metrics
+      const now = Date.now();
+      const oneHourAgo = now - 3600000;
+      const threeDaysAgo = now - (86400000 * 3);
+      const fourDaysAgo = now - (86400000 * 4);
+      
       const recentSessions = [
-        { ...mockSession, id: 's2', context_used: 25000, actual_lines: 150, start_time: Date.now() - 3600000, progress: { completed_files: 15 } },
-        { ...mockSession, id: 's3', context_used: 20000, actual_lines: 200, start_time: Date.now() - 1800000, progress: { completed_files: 20 } },
+        { ...mockSession, id: 's3', context_used: 20000, actual_lines: 200, start_time: now, progress: { completed_files: 20 } },
+        { ...mockSession, id: 's2', context_used: 25000, actual_lines: 150, start_time: oneHourAgo, progress: { completed_files: 15 } },
       ];
       
       const historicalSessions = [
-        { ...mockSession, id: 's1', context_used: 30000, actual_lines: 50, start_time: Date.now() - 86400000 * 3, progress: { completed_files: 10 } },
+        { ...mockSession, id: 's1', context_used: 30000, actual_lines: 50, start_time: threeDaysAgo, progress: { completed_files: 10 } },
+        { ...mockSession, id: 's0', context_used: 30000, actual_lines: 40, start_time: fourDaysAgo, progress: { completed_files: 8 } },
       ];
 
       jest.spyOn(DatabaseConnection.getInstance(), 'all').mockImplementation((query) => {
@@ -236,20 +242,31 @@ describe('ProjectTracker', () => {
       });
 
       const result = await projectTracker.analyzeVelocity({ project_id: 'project-123' });
-
+      
+      // Recent: 350 lines in ~1 hour = ~350 lines/day
+      // Historical: 90 lines in 1 day = 90 lines/day
+      // This is clearly improving (>20% increase)
       expect(result.trend).toBe('improving');
       expect(result.factors).toBeInstanceOf(Array);
+      expect(result.factors.length).toBeGreaterThan(0);
     });
 
     it('should detect declining velocity trend', async () => {
       // Mock sessions with declining metrics
+      const now = Date.now();
+      const oneDayAgo = now - 86400000;
+      const twoDaysAgo = now - (86400000 * 2);
+      const fourDaysAgo = now - (86400000 * 4);
+      const fiveDaysAgo = now - (86400000 * 5);
+      
       const recentSessions = [
-        { ...mockSession, id: 's2', context_used: 25000, actual_lines: 50, start_time: Date.now() - 3600000, progress: { completed_files: 15 } },
-        { ...mockSession, id: 's3', context_used: 30000, actual_lines: 30, start_time: Date.now() - 1800000, progress: { completed_files: 10 } },
+        { ...mockSession, id: 's3', context_used: 45000, actual_lines: 40, start_time: now, progress: { completed_files: 4 } },
+        { ...mockSession, id: 's2', context_used: 40000, actual_lines: 50, start_time: oneDayAgo, progress: { completed_files: 5 } },
       ];
       
       const historicalSessions = [
-        { ...mockSession, id: 's1', context_used: 20000, actual_lines: 200, start_time: Date.now() - 86400000 * 3, progress: { completed_files: 20 } },
+        { ...mockSession, id: 's1', context_used: 20000, actual_lines: 200, start_time: fourDaysAgo, progress: { completed_files: 20 } },
+        { ...mockSession, id: 's0', context_used: 20000, actual_lines: 180, start_time: fiveDaysAgo, progress: { completed_files: 18 } },
       ];
 
       jest.spyOn(DatabaseConnection.getInstance(), 'all').mockImplementation((query) => {
@@ -263,8 +280,13 @@ describe('ProjectTracker', () => {
       });
 
       const result = await projectTracker.analyzeVelocity({ project_id: 'project-123' });
-
+      
+      // Recent: 90 lines in 1 day = 90 lines/day
+      // Historical: 380 lines in 1 day = 380 lines/day
+      // This is clearly declining (>20% decrease)
       expect(result.trend).toBe('declining');
+      expect(result.factors).toBeInstanceOf(Array);
+      expect(result.factors.length).toBeGreaterThan(0);
     });
 
     it('should handle no sessions in window', async () => {
