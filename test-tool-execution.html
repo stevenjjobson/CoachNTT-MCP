@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Tool Execution Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .log { background: #f5f5f5; padding: 5px; margin: 5px 0; }
+        button { padding: 10px; margin: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Tool Execution Test</h1>
+    
+    <div class="section">
+        <h2>Connection Status</h2>
+        <div id="status">Not connected</div>
+    </div>
+    
+    <div class="section">
+        <h2>Quick Actions</h2>
+        <button onclick="connect()">Connect & Auth</button>
+        <button onclick="createCheckpoint()">Create Checkpoint</button>
+        <button onclick="performRealityCheck()">Reality Check</button>
+        <button onclick="optimizeContext()">Optimize Context</button>
+        <button onclick="getSuggestedActions()">Get Suggestions</button>
+    </div>
+    
+    <div class="section">
+        <h2>Messages</h2>
+        <div id="messages"></div>
+    </div>
+    
+    <script>
+        let ws = null;
+        let isAuthenticated = false;
+        
+        function log(message, data, isError = false) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = isError ? 'log error' : 'log';
+            div.innerHTML = `<strong>${new Date().toISOString()}</strong> ${message}`;
+            if (data) {
+                div.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            messages.insertBefore(div, messages.firstChild);
+        }
+        
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+            
+            ws = new WebSocket('ws://localhost:8080');
+            
+            ws.onopen = () => {
+                document.getElementById('status').textContent = 'Connected - Authenticating...';
+                log('WebSocket connected');
+                
+                // Authenticate
+                ws.send(JSON.stringify({
+                    type: 'authenticate',
+                    auth: 'myworkflow-secret'
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                
+                if (message.type === 'auth' && message.data?.authenticated) {
+                    isAuthenticated = true;
+                    document.getElementById('status').textContent = 'Connected & Authenticated';
+                    log('Authentication successful', message.data, false);
+                    
+                    // Subscribe to tool execution events
+                    ws.send(JSON.stringify({
+                        type: 'subscribe',
+                        topic: 'tool:execution'
+                    }));
+                } else if (message.type === 'event' && message.topic === 'tool:execution') {
+                    log('Tool Execution Event:', message.data.log, false);
+                } else if (message.type === 'result') {
+                    const isSuccess = message.data?.success;
+                    log(`Tool Result (${message.requestId}):`, message.data, !isSuccess);
+                } else if (message.type === 'error') {
+                    log('Error:', message, true);
+                } else {
+                    log(`Received ${message.type}`, message);
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket error', error, true);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('status').textContent = 'Disconnected';
+                isAuthenticated = false;
+                log('WebSocket disconnected');
+            };
+        }
+        
+        function executeTool(tool, params = {}) {
+            if (!ws || ws.readyState !== WebSocket.OPEN || !isAuthenticated) {
+                alert('Not connected or authenticated');
+                return;
+            }
+            
+            const requestId = `test-${Date.now()}`;
+            ws.send(JSON.stringify({
+                type: 'execute',
+                tool: tool,
+                params: params,
+                requestId: requestId
+            }));
+            log(`Executing tool: ${tool}`, { requestId, params });
+        }
+        
+        async function getActiveSession() {
+            return new Promise((resolve) => {
+                const requestId = `session-${Date.now()}`;
+                
+                const handler = (event) => {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'result' && message.requestId === requestId) {
+                        ws.removeEventListener('message', handler);
+                        resolve(message.data?.result);
+                    }
+                };
+                
+                ws.addEventListener('message', handler);
+                
+                ws.send(JSON.stringify({
+                    type: 'execute',
+                    tool: 'getActiveSession',
+                    params: {},
+                    requestId: requestId
+                }));
+            });
+        }
+        
+        async function createCheckpoint() {
+            const session = await getActiveSession();
+            if (!session) {
+                alert('No active session');
+                return;
+            }
+            
+            executeTool('createCheckpoint', {
+                sessionId: session.id,
+                achievements: ['Testing MCP Interaction Log'],
+                linesWritten: 100,
+                testsPassing: 50,
+                contextUsed: 10,
+                commitMessage: 'Test checkpoint from UI'
+            });
+        }
+        
+        async function performRealityCheck() {
+            const session = await getActiveSession();
+            if (!session) {
+                alert('No active session');
+                return;
+            }
+            
+            executeTool('performRealityCheck', {
+                sessionId: session.id,
+                checkType: 'quick'
+            });
+        }
+        
+        async function optimizeContext() {
+            const session = await getActiveSession();
+            if (!session) {
+                alert('No active session');
+                return;
+            }
+            
+            executeTool('optimizeContext', {
+                sessionId: session.id,
+                threshold: 0.3
+            });
+        }
+        
+        async function getSuggestedActions() {
+            const session = await getActiveSession();
+            if (!session) {
+                alert('No active session');
+                return;
+            }
+            
+            executeTool('suggestActions', {
+                sessionId: session.id
+            });
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            connect();
+        };
+    </script>
+</body>
+</html>

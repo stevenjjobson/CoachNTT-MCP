@@ -115,6 +115,13 @@ export class ToolExecutionHandler extends EventEmitter {
             console.log('[ToolHandler] Broadcasting session update after creation');
             // The session manager should automatically update its observable
             // which will trigger updates to all subscribers
+            
+            // Initialize project tracker with the new session
+            console.log('[ToolHandler] Initializing project tracker for session:', result.session.id);
+            await this.managers.project.track({
+              project_name: result.session.project_name,
+              session_id: result.session.id
+            });
           }
           break;
           

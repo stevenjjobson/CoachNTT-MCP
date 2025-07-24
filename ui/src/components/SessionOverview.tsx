@@ -13,9 +13,10 @@ export default function SessionOverview() {
   const handleCheckpoint = async () => {
     if (!session) return;
     
+    console.log('[SessionOverview] Checkpoint button clicked');
     setLoading('checkpoint');
     try {
-      await tools.createCheckpoint(
+      const result = await tools.createCheckpoint(
         session.id,
         ['Current progress'],
         {
@@ -24,6 +25,7 @@ export default function SessionOverview() {
           context_used_percent: state.contextStatus?.usage_percent || 0,
         }
       );
+      console.log('[SessionOverview] Checkpoint result:', result);
     } catch (error) {
       console.error('Failed to create checkpoint:', error);
     } finally {

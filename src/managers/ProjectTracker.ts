@@ -43,6 +43,41 @@ export class ProjectTracker {
     return this.velocityMetrics$.asObservable();
   }
 
+  async getCurrentProject(projectName: string): Promise<Project | null> {
+    try {
+      const project = this.db.get<any>(
+        'SELECT * FROM projects WHERE name = ?',
+        projectName
+      );
+
+      if (!project) {
+        return null;
+      }
+
+      // Convert to interface format
+      const result: Project = {
+        id: project.id,
+        name: project.name,
+        created_at: project.created_at,
+        total_sessions: project.total_sessions,
+        total_lines_written: project.total_lines_written,
+        average_velocity: project.average_velocity,
+        completion_rate: project.completion_rate,
+        common_blockers: typeof project.common_blockers === 'string' 
+          ? JSON.parse(project.common_blockers) 
+          : project.common_blockers || [],
+        tech_stack: typeof project.tech_stack === 'string'
+          ? JSON.parse(project.tech_stack)
+          : project.tech_stack || [],
+      };
+
+      return result;
+    } catch (error) {
+      console.error('Failed to get current project:', error);
+      return null;
+    }
+  }
+
   async track(params: { project_name: string; session_id: string }): Promise<Project> {
     const { project_name, session_id } = params;
 
@@ -155,10 +190,10 @@ export class ProjectTracker {
           completion_rate: project.completion_rate,
           common_blockers: typeof project.common_blockers === 'string' 
             ? JSON.parse(project.common_blockers) 
-            : project.common_blockers,
+            : project.common_blockers || [],
           tech_stack: typeof project.tech_stack === 'string'
             ? JSON.parse(project.tech_stack)
-            : project.tech_stack,
+            : project.tech_stack || [],
         };
 
         // Emit update

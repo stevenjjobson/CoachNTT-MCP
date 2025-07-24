@@ -6,6 +6,7 @@ import { RealityChecker } from '../managers/RealityChecker';
 import { ProjectTracker } from '../managers/ProjectTracker';
 import { DocumentationEngine } from '../managers/DocumentationEngine';
 import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { ToolExecutionHandler, ToolExecutionRequest } from './handlers';
 
 interface ClientConnection {
@@ -230,6 +231,21 @@ export class MyWorkFlowWebSocketServer {
         subscription = this.managers.context.getContextStatus().subscribe(status => {
           this.sendEvent(client, topic, { status });
         });
+        
+        // Send current context status immediately
+        try {
+          const activeSession = await this.managers.session.getActiveSession();
+          if (activeSession) {
+            const contextStatus = await this.managers.context.getStatus({ 
+              session_id: activeSession.id 
+            });
+            if (contextStatus) {
+              this.sendEvent(client, topic, { status: contextStatus });
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to get initial context status: ${err}`);
+        }
         break;
 
       case 'reality.checks':
@@ -242,6 +258,21 @@ export class MyWorkFlowWebSocketServer {
         subscription = this.managers.project.getProjectStatus().subscribe(project => {
           this.sendEvent(client, topic, { project });
         });
+        
+        // Send current project status immediately
+        try {
+          const activeSession = await this.managers.session.getActiveSession();
+          if (activeSession && activeSession.project_name) {
+            // Get the current project directly from database
+            const currentProject = await this.managers.project.getCurrentProject(activeSession.project_name);
+            
+            if (currentProject) {
+              this.sendEvent(client, topic, { project: currentProject });
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to get initial project status: ${err}`);
+        }
         break;
 
       case 'project.velocity':
@@ -255,6 +286,14 @@ export class MyWorkFlowWebSocketServer {
           this.sendEvent(client, topic, { status });
         });
         break;
+
+      case 'tool:execution':
+        // Tool execution is event-based, not observable-based
+        // Just mark the client as subscribed, events will be broadcast automatically
+        console.log(`Client ${client.id} subscribed to tool:execution events`);
+        // Store a dummy subscription to track it
+        client.subscriptions.set(topic, { unsubscribe: () => {} } as any);
+        return;
 
       default:
         this.sendError(client, `Unknown topic: ${topic}`);

@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    strictPort: false, // Allow Vite to find an available port
     host: true, // Listen on all addresses for Docker/WSL
     proxy: {
       '/ws': {

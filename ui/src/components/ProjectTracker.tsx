@@ -137,7 +137,7 @@ export default function ProjectTracker() {
           </div>
 
           {/* Common Blockers */}
-          {project.common_blockers.length > 0 && (
+          {project.common_blockers && project.common_blockers.length > 0 && (
             <div className="mb-4">
               <h3 className="text-sm font-medium mb-2 flex items-center space-x-1">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />

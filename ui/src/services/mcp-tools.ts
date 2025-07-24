@@ -39,10 +39,13 @@ export class MCPToolsService {
   }
 
   async createCheckpoint(sessionId: string, components: string[], metrics: any) {
+    console.log('[MCPTools] Creating checkpoint:', { sessionId, components, metrics });
     return this.callTool('createCheckpoint', {
-      session_id: sessionId,
-      completed_components: components,
-      metrics,
+      sessionId,  // Changed from session_id to match handler expectation
+      achievements: components,  // Changed from completed_components to match handler
+      linesWritten: metrics.lines_written || 0,
+      testsPassing: metrics.tests_passing || 0,
+      contextUsed: metrics.context_used_percent || 0,
     });
   }
 
@@ -61,10 +64,10 @@ export class MCPToolsService {
   }
 
   async optimizeContext(sessionId: string, targetReduction: number) {
+    console.log('[MCPTools] Optimizing context:', { sessionId, targetReduction });
     return this.callTool('optimizeContext', {
-      session_id: sessionId,
-      target_reduction: targetReduction,
-      preserve_functionality: true,
+      sessionId,  // Changed from session_id
+      threshold: targetReduction,  // Changed from target_reduction to match handler
     });
   }
 
@@ -77,9 +80,10 @@ export class MCPToolsService {
 
   // Reality Check Tools
   async performRealityCheck(sessionId: string, checkType: string = 'quick') {
+    console.log('[MCPTools] Performing reality check:', { sessionId, checkType });
     return this.callTool('performRealityCheck', {
-      session_id: sessionId,
-      check_type: checkType,
+      sessionId,  // Changed from session_id
+      checkType,  // Changed from check_type
     });
   }
 

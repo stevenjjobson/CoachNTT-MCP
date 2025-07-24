@@ -161,6 +161,11 @@ export class SessionManager {
       this.sessionMetrics$.next(initialMetrics);
       this.contextStatus$.next({ used: 0, total: contextPlan.total_budget, percent: 0 });
       
+      // Initialize context monitor with session
+      if (this.contextMonitor) {
+        this.contextMonitor.trackUsage(sessionId, 'initialization', 0, 'session_start');
+      }
+      
       console.log('Session manager: New session started:', session.id);
       return session;
     });

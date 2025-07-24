@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Context & Project Status Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .section { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .log { background: #f5f5f5; padding: 5px; margin: 5px 0; }
+        button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Context & Project Status Test</h1>
+    
+    <div class="section">
+        <h2>Connection Status</h2>
+        <div id="status">Not connected</div>
+    </div>
+    
+    <div class="section">
+        <h2>Controls</h2>
+        <button onclick="connect()">Connect</button>
+        <button onclick="authenticate()">Authenticate</button>
+        <button onclick="subscribeContext()">Subscribe Context</button>
+        <button onclick="subscribeProject()">Subscribe Project</button>
+        <button onclick="getActiveSession()">Get Active Session</button>
+    </div>
+    
+    <div class="section">
+        <h2>Messages</h2>
+        <div id="messages"></div>
+    </div>
+    
+    <script>
+        let ws = null;
+        
+        function log(message, data) {
+            const messages = document.getElementById('messages');
+            const div = document.createElement('div');
+            div.className = 'log';
+            div.innerHTML = `<strong>${new Date().toISOString()}</strong> ${message}`;
+            if (data) {
+                div.innerHTML += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+            }
+            messages.insertBefore(div, messages.firstChild);
+        }
+        
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+            
+            ws = new WebSocket('ws://localhost:8080');
+            
+            ws.onopen = () => {
+                document.getElementById('status').textContent = 'Connected';
+                log('WebSocket connected');
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                log(`Received ${message.type}`, message);
+                
+                if (message.type === 'event') {
+                    if (message.topic === 'context.status') {
+                        log('Context Status Update:', message.data);
+                    } else if (message.topic === 'project.status') {
+                        log('Project Status Update:', message.data);
+                    }
+                }
+            };
+            
+            ws.onerror = (error) => {
+                log('WebSocket error', error);
+            };
+            
+            ws.onclose = () => {
+                document.getElementById('status').textContent = 'Disconnected';
+                log('WebSocket disconnected');
+            };
+        }
+        
+        function authenticate() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'authenticate',
+                auth: 'myworkflow-secret'
+            }));
+            log('Sent authentication');
+        }
+        
+        function subscribeContext() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'subscribe',
+                topic: 'context.status'
+            }));
+            log('Subscribed to context.status');
+        }
+        
+        function subscribeProject() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected');
+                return;
+            }
+            
+            ws.send(JSON.stringify({
+                type: 'subscribe',
+                topic: 'project.status'
+            }));
+            log('Subscribed to project.status');
+        }
+        
+        function getActiveSession() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) {
+                alert('Not connected');
+                return;
+            }
+            
+            const requestId = 'req-' + Date.now();
+            ws.send(JSON.stringify({
+                type: 'execute',
+                tool: 'getActiveSession',
+                requestId: requestId,
+                params: {}
+            }));
+            log('Requested active session', { requestId });
+        }
+    </script>
+</body>
+</html>

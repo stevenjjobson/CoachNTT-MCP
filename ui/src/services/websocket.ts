@@ -70,12 +70,15 @@ export class WebSocketService {
     console.log('[WebSocket] Sending authentication...');
     this.send({
       type: 'authenticate',
-      auth: 'dev-secret-key-123', // In production, get from config
+      auth: 'myworkflow-secret', // Changed to match server expectation
     });
   }
 
   private handleMessage(message: WSMessage): void {
-    console.log('[WebSocket] Received message:', message);
+    // Only log non-session messages to reduce console spam
+    if (message.type !== 'event' || message.topic !== 'session.status') {
+      console.log('[WebSocket] Received message:', message);
+    }
     if (message.type === 'auth' && message.data?.authenticated) {
       console.log('[WebSocket] Authentication successful!');
       this.authenticated = true;
@@ -87,7 +90,7 @@ export class WebSocketService {
 
     // Handle tool execution results
     if (message.type === 'result' && message.requestId) {
-      console.log('Tool execution result:', message);
+      // Tool results are logged above already
       const pending = this.pendingRequests.get(message.requestId);
       if (pending) {
         this.pendingRequests.delete(message.requestId);
@@ -118,6 +121,7 @@ export class WebSocketService {
       'reality.checks',
       'project.status',
       'suggestions.actions',
+      'tool:execution',  // Added tool execution events
     ];
 
     console.log('[WebSocket] Subscribing to topics:', topics);
@@ -208,12 +212,14 @@ export class WebSocketService {
     return new Promise((resolve, reject) => {
       this.pendingRequests.set(requestId, { resolve, reject });
       
-      this.send({
+      const message = {
         type: 'execute',
         tool,
         params,
         requestId,
-      });
+      };
+      console.log('[WebSocket] Sending tool execution:', message); // Keep this one for debugging
+      this.send(message);
       
       // Timeout after 30 seconds
       setTimeout(() => {

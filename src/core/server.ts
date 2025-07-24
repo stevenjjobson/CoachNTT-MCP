@@ -12,6 +12,7 @@ import { RealityChecker } from '../managers/RealityChecker';
 import { DocumentationEngine } from '../managers/DocumentationEngine';
 import { ProjectTracker } from '../managers/ProjectTracker';
 import { createToolRegistry } from './tools';
+import { WebSocketBroadcaster } from '../utils/websocket-broadcaster';
 
 export class MyWorkFlowServer {
   private server: Server;
@@ -21,6 +22,7 @@ export class MyWorkFlowServer {
   private realityChecker: RealityChecker;
   private documentationEngine: DocumentationEngine;
   private projectTracker: ProjectTracker;
+  private wsBroadcaster: WebSocketBroadcaster;
 
   constructor() {
     this.server = new Server(
@@ -40,6 +42,7 @@ export class MyWorkFlowServer {
     this.realityChecker = new RealityChecker();
     this.documentationEngine = new DocumentationEngine();
     this.projectTracker = new ProjectTracker();
+    this.wsBroadcaster = WebSocketBroadcaster.getInstance();
 
     this.tools = createToolRegistry({
       sessionManager: this.sessionManager,
@@ -67,6 +70,10 @@ export class MyWorkFlowServer {
 
       try {
         const result = await tool.handler(args);
+        
+        // Broadcast the tool execution to WebSocket
+        this.wsBroadcaster.broadcastToolExecution(name, args, result);
+        
         return {
           content: [
             {
@@ -76,6 +83,9 @@ export class MyWorkFlowServer {
           ],
         };
       } catch (error) {
+        // Broadcast the error too
+        this.wsBroadcaster.broadcastToolExecution(name, args, null, error);
+        
         return {
           content: [
             {
