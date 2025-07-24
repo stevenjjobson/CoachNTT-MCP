@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test WebSocket Subscriptions</title>
+</head>
+<body>
+    <h1>WebSocket Subscription Test</h1>
+    <button onclick="subscribeAll()">Subscribe to All Topics</button>
+    <button onclick="checkContext()">Check Context Status</button>
+    <div id="status"></div>
+    <pre id="messages"></pre>
+    
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        let messageCount = 0;
+        
+        function log(message) {
+            messageCount++;
+            const p = document.createElement('p');
+            p.textContent = `${messageCount}. ${new Date().toISOString()}: ${message}`;
+            messagesEl.appendChild(p);
+            console.log(message);
+        }
+        
+        ws.onopen = () => {
+            statusEl.textContent = 'Connected - Authenticating...';
+            log('WebSocket connected');
+            
+            // Send authentication
+            ws.send(JSON.stringify({
+                type: 'authenticate',
+                auth: 'dev-secret-key-123'
+            }));
+        };
+        
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            log(`Received: ${JSON.stringify(message, null, 2)}`);
+            
+            if (message.type === 'auth' && message.data?.authenticated) {
+                statusEl.textContent = 'Authenticated - Ready';
+            }
+        };
+        
+        function subscribeAll() {
+            const topics = [
+                'session.status',
+                'context.status',
+                'project.status',
+                'reality.checks',
+                'suggestions.actions'
+            ];
+            
+            topics.forEach(topic => {
+                const msg = {
+                    type: 'subscribe',
+                    topic: topic
+                };
+                log(`Subscribing to ${topic}`);
+                ws.send(JSON.stringify(msg));
+            });
+        }
+        
+        function checkContext() {
+            const msg = {
+                type: 'execute',
+                tool: 'getContextReport',
+                requestId: 'context-check-' + Date.now(),
+                params: {
+                    sessionId: '40ca3417-0539-46dd-b3dd-d50742878962' // Your test session ID
+                }
+            };
+            log(`Executing getContextReport`);
+            ws.send(JSON.stringify(msg));
+        }
+    </script>
+</body>
+</html>

@@ -109,6 +109,18 @@ export interface WSMessage {
   requestId?: string;
 }
 
+// Tool Execution Types
+export interface ToolExecutionLog {
+  id: string;
+  timestamp: number;
+  tool: string;
+  params: unknown;
+  result?: unknown;
+  error?: string;
+  duration: number;
+  status: 'pending' | 'success' | 'error';
+}
+
 // Dashboard State
 export interface DashboardState {
   connected: boolean;
@@ -120,6 +132,7 @@ export interface DashboardState {
   project?: Project;
   velocityMetrics?: VelocityMetrics;
   suggestedActions: QuickAction[];
+  toolExecutionLogs: ToolExecutionLog[];
   uiState: {
     expanded: boolean;
     refreshInterval: number;

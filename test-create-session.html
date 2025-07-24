@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Test Session</title>
+</head>
+<body>
+    <h1>Create Test Session</h1>
+    <button onclick="createSession()">Create New Session</button>
+    <div id="status"></div>
+    <pre id="response"></pre>
+    
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const statusEl = document.getElementById('status');
+        const responseEl = document.getElementById('response');
+        
+        ws.onopen = () => {
+            statusEl.textContent = 'Connected - Authenticating...';
+            
+            // Send authentication
+            ws.send(JSON.stringify({
+                type: 'authenticate',
+                auth: 'dev-secret-key-123'
+            }));
+        };
+        
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            console.log('Received:', message);
+            
+            if (message.type === 'auth' && message.data?.authenticated) {
+                statusEl.textContent = 'Authenticated - Ready to create session';
+            }
+            
+            if (message.type === 'result') {
+                responseEl.textContent = JSON.stringify(message, null, 2);
+            }
+        };
+        
+        function createSession() {
+            const request = {
+                type: 'execute',
+                tool: 'startSession',
+                requestId: 'test-' + Date.now(),
+                params: {
+                    projectName: 'Test Project',
+                    type: 'feature',
+                    estimated_scope: {
+                        lines_of_code: 100,
+                        test_coverage: 80,
+                        documentation: 5
+                    },
+                    contextBudget: 10000
+                }
+            };
+            
+            console.log('Sending:', request);
+            ws.send(JSON.stringify(request));
+            statusEl.textContent = 'Creating session...';
+        }
+    </script>
+</body>
+</html>

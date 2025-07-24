@@ -4,6 +4,8 @@ import { RealityChecker } from '../managers/RealityChecker';
 import { ProjectTracker } from '../managers/ProjectTracker';
 import { DocumentationEngine } from '../managers/DocumentationEngine';
 import { take } from 'rxjs/operators';
+import { EventEmitter } from 'events';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface ToolExecutionRequest {
   tool: string;
@@ -19,7 +21,18 @@ export interface ToolExecutionResponse {
   error?: string;
 }
 
-export class ToolExecutionHandler {
+export interface ToolExecutionLog {
+  id: string;
+  timestamp: number;
+  tool: string;
+  params: unknown;
+  result?: unknown;
+  error?: string;
+  duration: number;
+  status: 'pending' | 'success' | 'error';
+}
+
+export class ToolExecutionHandler extends EventEmitter {
   constructor(
     private managers: {
       session: SessionManager;
@@ -28,10 +41,26 @@ export class ToolExecutionHandler {
       project: ProjectTracker;
       documentation: DocumentationEngine;
     }
-  ) {}
+  ) {
+    super();
+  }
 
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionResponse> {
     const { tool, params, requestId } = request;
+    const startTime = Date.now();
+    
+    // Create tool execution log entry
+    const logEntry: ToolExecutionLog = {
+      id: uuidv4(),
+      timestamp: startTime,
+      tool,
+      params,
+      status: 'pending',
+      duration: 0
+    };
+    
+    // Emit tool execution started event
+    this.emit('tool:execution', { log: logEntry });
     
     // Map UI tool names to MCP tool names
     const toolNameMapping: Record<string, string> = {
@@ -242,6 +271,15 @@ export class ToolExecutionHandler {
           throw new Error(`Unknown tool: ${tool}`);
       }
       
+      // Update log entry with success
+      const endTime = Date.now();
+      logEntry.status = 'success';
+      logEntry.result = result;
+      logEntry.duration = endTime - startTime;
+      
+      // Emit tool execution completed event
+      this.emit('tool:execution', { log: logEntry });
+      
       return {
         tool,
         requestId,
@@ -249,6 +287,15 @@ export class ToolExecutionHandler {
         result,
       };
     } catch (error) {
+      // Update log entry with error
+      const endTime = Date.now();
+      logEntry.status = 'error';
+      logEntry.error = error instanceof Error ? error.message : 'Unknown error';
+      logEntry.duration = endTime - startTime;
+      
+      // Emit tool execution error event
+      this.emit('tool:execution', { log: logEntry });
+      
       return {
         tool,
         requestId,

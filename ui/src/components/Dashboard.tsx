@@ -6,6 +6,7 @@ import RealityCheck from './RealityCheck';
 import ProjectTracker from './ProjectTracker';
 import QuickActions from './QuickActions';
 import ConnectionStatus from './ConnectionStatus';
+import { MCPInteractionLog } from './MCPInteractionLog';
 import { AlertCircle } from 'lucide-react';
 
 export default function Dashboard() {
@@ -56,35 +57,43 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Full Width Section */}
-        {state.recentCheckpoints.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-lg font-semibold mb-4">Recent Checkpoints</h2>
-            <div className="card p-4">
-              <div className="space-y-3">
-                {state.recentCheckpoints.map((checkpoint) => (
-                  <div
-                    key={checkpoint.id}
-                    className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                  >
-                    <div>
-                      <p className="font-medium">{checkpoint.message}</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {new Date(checkpoint.timestamp).toLocaleString()}
-                      </p>
+        {/* Full Width Sections */}
+        <div className="mt-8 space-y-8">
+          {/* MCP Interaction Log */}
+          <div>
+            <MCPInteractionLog />
+          </div>
+          
+          {/* Recent Checkpoints */}
+          {state.recentCheckpoints.length > 0 && (
+            <div>
+              <h2 className="text-lg font-semibold mb-4">Recent Checkpoints</h2>
+              <div className="card p-4">
+                <div className="space-y-3">
+                  {state.recentCheckpoints.map((checkpoint) => (
+                    <div
+                      key={checkpoint.id}
+                      className="flex items-center justify-between py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                    >
+                      <div>
+                        <p className="font-medium">{checkpoint.message}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {new Date(checkpoint.timestamp).toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-medium">{checkpoint.metrics.lines_written} lines</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {checkpoint.metrics.context_used_percent}% context used
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">{checkpoint.metrics.lines_written} lines</p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {checkpoint.metrics.context_used_percent}% context used
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </main>
     </div>
   );

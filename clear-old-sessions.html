@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Old Sessions</title>
+</head>
+<body>
+    <h1>Session Management</h1>
+    <button onclick="listSessions()">List All Sessions</button>
+    <button onclick="clearOldSession()">Clear Old CoachNTT-MCP Session</button>
+    <div id="status"></div>
+    <pre id="response"></pre>
+    
+    <script>
+        let ws;
+        const statusEl = document.getElementById('status');
+        const responseEl = document.getElementById('response');
+        
+        function connect() {
+            ws = new WebSocket('ws://localhost:8080');
+            
+            ws.onopen = () => {
+                statusEl.textContent = 'Connected - Authenticating...';
+                
+                // Send authentication
+                ws.send(JSON.stringify({
+                    type: 'authenticate',
+                    auth: 'dev-secret-key-123'
+                }));
+            };
+            
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                console.log('Received:', message);
+                
+                if (message.type === 'auth' && message.data?.authenticated) {
+                    statusEl.textContent = 'Authenticated - Ready';
+                }
+                
+                if (message.type === 'result') {
+                    responseEl.textContent = JSON.stringify(message, null, 2);
+                }
+            };
+        }
+        
+        function listSessions() {
+            // This would need a backend endpoint to list all sessions
+            statusEl.textContent = 'Listing sessions not implemented yet';
+        }
+        
+        function clearOldSession() {
+            // Complete the old session
+            const request = {
+                type: 'execute',
+                tool: 'completeSession',
+                requestId: 'clear-' + Date.now(),
+                params: {
+                    sessionId: 'c9a8bf57-0956-4fe7-85e8-5c9d1f0283fe' // The old 46-hour session
+                }
+            };
+            
+            console.log('Sending:', request);
+            ws.send(JSON.stringify(request));
+            statusEl.textContent = 'Completing old session...';
+        }
+        
+        connect();
+    </script>
+</body>
+</html>

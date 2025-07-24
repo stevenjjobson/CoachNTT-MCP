@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
-import { DashboardState, WSMessage } from '../types';
+import { DashboardState, WSMessage, ToolExecutionLog } from '../types';
 import { WebSocketService } from '../services/websocket';
 import { MCPToolsService } from '../services/mcp-tools';
 
@@ -8,6 +8,7 @@ interface DashboardContextValue {
   ws: WebSocketService;
   tools: MCPToolsService;
   dispatch: React.Dispatch<DashboardAction>;
+  toolExecutionLogs: ToolExecutionLog[];
 }
 
 type DashboardAction =
@@ -20,6 +21,7 @@ type DashboardAction =
   | { type: 'SET_PROJECT'; payload: any }
   | { type: 'SET_VELOCITY'; payload: any }
   | { type: 'SET_ACTIONS'; payload: any[] }
+  | { type: 'ADD_TOOL_LOG'; payload: ToolExecutionLog }
   | { type: 'UPDATE_UI_STATE'; payload: Partial<DashboardState['uiState']> };
 
 const initialState: DashboardState = {
@@ -28,6 +30,7 @@ const initialState: DashboardState = {
   recentCheckpoints: [],
   activeDiscrepancies: [],
   suggestedActions: [],
+  toolExecutionLogs: [],
   uiState: {
     expanded: true,
     refreshInterval: 5000,
@@ -66,6 +69,12 @@ function dashboardReducer(state: DashboardState, action: DashboardAction): Dashb
     
     case 'SET_ACTIONS':
       return { ...state, suggestedActions: action.payload };
+    
+    case 'ADD_TOOL_LOG':
+      return {
+        ...state,
+        toolExecutionLogs: [...state.toolExecutionLogs, action.payload].slice(-100), // Keep last 100 logs
+      };
     
     case 'UPDATE_UI_STATE':
       return {
@@ -110,6 +119,7 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
     ws,
     tools,
     dispatch,
+    toolExecutionLogs: state.toolExecutionLogs,
   };
 
   return (
@@ -150,6 +160,12 @@ function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<Das
       
       case 'suggestions.actions':
         dispatch({ type: 'SET_ACTIONS', payload: message.data.actions });
+        break;
+      
+      case 'tool:execution':
+        if (message.data.log) {
+          dispatch({ type: 'ADD_TOOL_LOG', payload: message.data.log });
+        }
         break;
     }
   }

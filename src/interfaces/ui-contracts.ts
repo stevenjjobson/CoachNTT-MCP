@@ -11,6 +11,7 @@ export interface DashboardEvents {
   'context:critical': { immediate_action: string };
   'reality:discrepancy': { discrepancies: Discrepancy[] };
   'ui:action': { action: string; params: unknown };
+  'tool:execution': { log: any }; // Type defined in handlers
 }
 
 export interface UIState {

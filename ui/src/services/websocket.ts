@@ -67,6 +67,7 @@ export class WebSocketService {
   }
 
   private authenticate(): void {
+    console.log('[WebSocket] Sending authentication...');
     this.send({
       type: 'authenticate',
       auth: 'dev-secret-key-123', // In production, get from config
@@ -74,10 +75,15 @@ export class WebSocketService {
   }
 
   private handleMessage(message: WSMessage): void {
+    console.log('[WebSocket] Received message:', message);
     if (message.type === 'auth' && message.data?.authenticated) {
+      console.log('[WebSocket] Authentication successful!');
       this.authenticated = true;
       this.subscribeToTopics();
     }
+    
+    // Forward all messages to handlers (including auth messages)
+    this.messageHandlers.forEach(handler => handler(message));
 
     // Handle tool execution results
     if (message.type === 'result' && message.requestId) {
@@ -103,8 +109,6 @@ export class WebSocketService {
         return;
       }
     }
-
-    this.messageHandlers.forEach(handler => handler(message));
   }
 
   private subscribeToTopics(): void {
@@ -157,9 +161,10 @@ export class WebSocketService {
 
   send(data: any): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
+      console.log('[WebSocket] Sending:', data);
       this.ws.send(JSON.stringify(data));
     } else {
-      console.warn('WebSocket not connected, cannot send message');
+      console.warn('WebSocket not connected, cannot send message:', data);
     }
   }
 

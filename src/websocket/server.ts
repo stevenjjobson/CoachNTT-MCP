@@ -60,6 +60,11 @@ export class MyWorkFlowWebSocketServer {
     
     // Initialize tool handler
     this.toolHandler = new ToolExecutionHandler(this.managers);
+    
+    // Forward tool execution events to all authenticated clients
+    this.toolHandler.on('tool:execution', (event) => {
+      this.broadcast('tool:execution', event);
+    });
 
     this.setupWebSocketHandlers();
     this.httpServer.listen(port, () => {
@@ -165,11 +170,15 @@ export class MyWorkFlowWebSocketServer {
   }
 
   private handleAuthentication(client: ClientConnection, auth?: string): void {
+    console.log(`[Auth] Client ${client.id} attempting authentication with token:`, auth);
+    const expectedAuth = process.env.MCP_WEBSOCKET_AUTH || 'myworkflow-secret';
+    console.log(`[Auth] Expected auth token:`, expectedAuth);
+    
     // Simple authentication - in production, implement proper auth
     // Accept both keys for backwards compatibility
-    if (auth === 'myworkflow-secret' || auth === 'dev-secret-key-123') {
+    if (auth === 'myworkflow-secret' || auth === 'dev-secret-key-123' || auth === expectedAuth) {
       client.authenticated = true;
-      console.log(`Client ${client.id} authenticated successfully`);
+      console.log(`[Auth] Client ${client.id} authenticated successfully`);
       this.sendMessage(client, {
         type: 'auth',
         data: { authenticated: true, message: 'Authentication successful' },

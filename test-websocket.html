@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Test</title>
+</head>
+<body>
+    <h1>WebSocket Authentication Test</h1>
+    <div id="status">Connecting...</div>
+    <div id="messages"></div>
+    
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        const statusEl = document.getElementById('status');
+        const messagesEl = document.getElementById('messages');
+        
+        function log(message) {
+            const p = document.createElement('p');
+            p.textContent = `${new Date().toISOString()}: ${message}`;
+            messagesEl.appendChild(p);
+            console.log(message);
+        }
+        
+        ws.onopen = () => {
+            statusEl.textContent = 'Connected - Sending authentication...';
+            log('WebSocket connected');
+            
+            // Send authentication
+            const authMessage = {
+                type: 'authenticate',
+                auth: 'dev-secret-key-123'
+            };
+            log(`Sending: ${JSON.stringify(authMessage)}`);
+            ws.send(JSON.stringify(authMessage));
+        };
+        
+        ws.onmessage = (event) => {
+            log(`Received: ${event.data}`);
+            const message = JSON.parse(event.data);
+            
+            if (message.type === 'auth' && message.data?.authenticated) {
+                statusEl.textContent = 'Authenticated successfully!';
+                statusEl.style.color = 'green';
+            }
+        };
+        
+        ws.onerror = (error) => {
+            statusEl.textContent = 'Error: ' + error;
+            statusEl.style.color = 'red';
+            log('WebSocket error: ' + error);
+        };
+        
+        ws.onclose = () => {
+            statusEl.textContent = 'Disconnected';
+            statusEl.style.color = 'orange';
+            log('WebSocket disconnected');
+        };
+    </script>
+</body>
+</html>
