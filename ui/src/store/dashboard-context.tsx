@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { DashboardState, WSMessage, ToolExecutionLog } from '../types';
 import { WebSocketService } from '../services/websocket';
 import { MCPToolsService } from '../services/mcp-tools';
+import { filteredLog, shouldLog } from '../utils/log-filter';
 
 interface DashboardContextValue {
   state: DashboardState;
@@ -130,9 +131,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
 }
 
 function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<DashboardAction>) {
-  // Only log non-session messages to reduce console spam
-  if (message.type !== 'event' || message.topic !== 'session.status') {
-    console.log('[Dashboard] Received WebSocket message:', message);
+  // Use filtered logging
+  if (shouldLog(message.topic, message.type)) {
+    filteredLog('[Dashboard] Received WebSocket message:', message, message.topic);
   }
   
   if (message.type === 'auth' && message.data?.authenticated) {
@@ -142,9 +143,9 @@ function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<Das
   }
 
   if (message.type === 'event' && message.topic) {
-    // Only log non-session events
-    if (message.topic !== 'session.status') {
-      console.log(`[Dashboard] Event for topic: ${message.topic}`, message.data);
+    // Log events based on filter level
+    if (shouldLog(message.topic)) {
+      filteredLog(`[Dashboard] Event for topic: ${message.topic}`, message.data, message.topic);
     }
     switch (message.topic) {
       case 'session.status':

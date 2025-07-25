@@ -12,15 +12,22 @@ export default function ContextMonitor() {
   const context = state.contextStatus;
 
   const handleOptimize = async () => {
-    if (!state.currentSession) return;
+    console.log('[ContextMonitor] Optimize button clicked');
+    if (!state.currentSession) {
+      console.log('[ContextMonitor] No active session, aborting');
+      return;
+    }
     
+    console.log(`[ContextMonitor] Optimizing context for session ${state.currentSession.id}`);
     setOptimizing(true);
     try {
-      await tools.optimizeContext(state.currentSession.id, 0.3);
+      const result = await tools.optimizeContext(state.currentSession.id, 0.3);
+      console.log('[ContextMonitor] Optimization result:', result);
     } catch (error) {
-      console.error('Failed to optimize context:', error);
+      console.error('[ContextMonitor] Failed to optimize context:', error);
     } finally {
       setOptimizing(false);
+      console.log('[ContextMonitor] Optimization complete');
     }
   };
 

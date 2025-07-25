@@ -60,12 +60,26 @@ export default function QuickActions({ position = 'floating' }: QuickActionsProp
   const actions = state.suggestedActions.length > 0 ? state.suggestedActions : defaultActions;
 
   const handleAction = async (actionId: string) => {
-    if (!state.currentSession) return;
+    console.log(`[QuickActions] Button clicked: ${actionId}`);
+    if (!state.currentSession) {
+      console.log('[QuickActions] No active session, aborting action');
+      return;
+    }
     
+    console.log(`[QuickActions] Executing action ${actionId} for session ${state.currentSession.id}`);
     setLoading(actionId);
     try {
       switch (actionId) {
         case 'checkpoint':
+          console.log('[QuickActions] Creating checkpoint with params:', {
+            sessionId: state.currentSession.id,
+            components: ['Quick checkpoint'],
+            metrics: {
+              lines_written: state.currentSession.actual_lines,
+              tests_passing: state.currentSession.actual_tests,
+              context_used_percent: state.contextStatus?.usage_percent || 0,
+            }
+          });
           await tools.createCheckpoint(
             state.currentSession.id,
             ['Quick checkpoint'],
@@ -75,23 +89,30 @@ export default function QuickActions({ position = 'floating' }: QuickActionsProp
               context_used_percent: state.contextStatus?.usage_percent || 0,
             }
           );
+          console.log('[QuickActions] Checkpoint created successfully');
           break;
         
         case 'reality_check':
+          console.log('[QuickActions] Performing reality check');
           await tools.performRealityCheck(state.currentSession.id, 'quick');
+          console.log('[QuickActions] Reality check completed');
           break;
         
         case 'generate_docs':
+          console.log('[QuickActions] Generating documentation');
           await tools.generateDocumentation(state.currentSession.id, 'readme');
+          console.log('[QuickActions] Documentation generated');
           break;
         
         default:
+          console.log(`[QuickActions] Executing quick action: ${actionId}`);
           await tools.executeQuickAction(actionId);
       }
     } catch (error) {
-      console.error(`Failed to execute action ${actionId}:`, error);
+      console.error(`[QuickActions] Failed to execute action ${actionId}:`, error);
     } finally {
       setLoading(null);
+      console.log(`[QuickActions] Action ${actionId} completed`);
     }
   };
 

@@ -1,4 +1,5 @@
 import { WSMessage } from '../types';
+import { filteredLog, shouldLog } from '../utils/log-filter';
 
 export type MessageHandler = (message: WSMessage) => void;
 export type ConnectionHandler = (connected: boolean) => void;
@@ -75,10 +76,14 @@ export class WebSocketService {
   }
 
   private handleMessage(message: WSMessage): void {
-    // Only log non-session messages to reduce console spam
-    if (message.type !== 'event' || message.topic !== 'session.status') {
-      console.log('[WebSocket] Received message:', message);
+    // Special logging for tool:execution events
+    if (message.type === 'event' && message.topic === 'tool:execution') {
+      console.log('[WebSocket] 🎯 TOOL EXECUTION EVENT RECEIVED:', message);
+    } else if (shouldLog(message.topic, message.type)) {
+      // Use filtered logging to reduce console spam
+      filteredLog('[WebSocket] Received message:', message, message.topic);
     }
+    
     if (message.type === 'auth' && message.data?.authenticated) {
       console.log('[WebSocket] Authentication successful!');
       this.authenticated = true;
@@ -90,7 +95,11 @@ export class WebSocketService {
 
     // Handle tool execution results
     if (message.type === 'result' && message.requestId) {
-      // Tool results are logged above already
+      console.log('[WebSocket] 📋 Tool execution result:', {
+        requestId: message.requestId,
+        success: message.data?.success,
+        tool: message.data?.tool
+      });
       const pending = this.pendingRequests.get(message.requestId);
       if (pending) {
         this.pendingRequests.delete(message.requestId);
@@ -165,7 +174,16 @@ export class WebSocketService {
 
   send(data: any): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
-      console.log('[WebSocket] Sending:', data);
+      // Special logging for tool execution
+      if (data.type === 'execute') {
+        console.log('[WebSocket] 🎯 SENDING TOOL EXECUTION:', {
+          tool: data.tool,
+          params: data.params,
+          requestId: data.requestId
+        });
+      } else {
+        console.log('[WebSocket] Sending:', data);
+      }
       this.ws.send(JSON.stringify(data));
     } else {
       console.warn('WebSocket not connected, cannot send message:', data);

@@ -12,16 +12,23 @@ export default function RealityCheck() {
   const discrepancies = state.activeDiscrepancies;
 
   const handleCheck = async () => {
-    if (!state.currentSession) return;
+    console.log('[RealityCheck] Run Check button clicked');
+    if (!state.currentSession) {
+      console.log('[RealityCheck] No active session, aborting');
+      return;
+    }
     
+    console.log(`[RealityCheck] Performing reality check for session ${state.currentSession.id}`);
     setChecking(true);
     try {
-      await tools.performRealityCheck(state.currentSession.id, 'quick');
+      const result = await tools.performRealityCheck(state.currentSession.id, 'quick');
+      console.log('[RealityCheck] Check result:', result);
       setLastCheck(new Date());
     } catch (error) {
-      console.error('Failed to perform reality check:', error);
+      console.error('[RealityCheck] Failed to perform reality check:', error);
     } finally {
       setChecking(false);
+      console.log('[RealityCheck] Check complete');
     }
   };
 
