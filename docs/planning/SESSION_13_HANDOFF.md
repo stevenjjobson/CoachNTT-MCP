@@ -179,3 +179,38 @@ const logs = await playwright.browser_console_messages({});
 - [ ] Console spam is manageable (no continuous session.status logs)
 - [ ] Tool execution events show parameters and results
 - [ ] Playwright can automatically test all UI functionality
+
+## Session 14 Plan: Sub-Agents Implementation
+
+### Priority 1: Fix Tool Execution Visibility
+Before implementing sub-agents, we must resolve the current issue where tool executions aren't appearing in the MCP Interaction Log.
+
+### Priority 2: Database Schema Extension
+Add tables for:
+- Agent memory (learning from decisions)
+- Symbol registry (naming consistency)
+- Agent activity tracking
+- Task queue for background processing
+
+### Priority 3: Core Agent Implementation
+Start with the three most impactful agents:
+1. **Integration Bridge Agent** - Help debug current issues
+2. **Symbol Contractor Agent** - Immediate value for naming consistency
+3. **Session Orchestrator Agent** - Prevent context exhaustion
+
+### Priority 4: UI Enhancements
+- Context allocation controls
+- Agent activity monitoring
+- Symbol registry browser
+
+### Technical Approach
+- Extend existing SQLite database
+- Create base agent infrastructure in `/src/agents/`
+- Add agent configurations in `.claude/agents/`
+- Integrate with existing MCP tools
+
+### Expected Outcomes
+- Tool execution visibility restored
+- Basic symbol registry operational
+- Context management improved
+- Foundation for additional agents

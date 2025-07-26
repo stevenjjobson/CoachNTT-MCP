@@ -122,6 +122,36 @@ CREATE TABLE IF NOT EXISTS documentations (
   FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
 );
 
+-- Agent memory table for sub-agent learning
+CREATE TABLE IF NOT EXISTS agent_memory (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_name TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  input_context TEXT NOT NULL,
+  decision_made TEXT NOT NULL,
+  worked BOOLEAN DEFAULT TRUE,
+  project_id TEXT,
+  session_id TEXT,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
+-- Symbol registry for naming consistency
+CREATE TABLE IF NOT EXISTS symbol_registry (
+  id TEXT PRIMARY KEY,
+  concept TEXT NOT NULL,
+  chosen_name TEXT NOT NULL,
+  context_type TEXT NOT NULL,
+  project_id TEXT NOT NULL,
+  confidence_score REAL DEFAULT 1.0,
+  usage_count INTEGER DEFAULT 1,
+  created_by_agent TEXT,
+  session_id TEXT,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+);
+
 -- Create indexes for performance
 CREATE INDEX IF NOT EXISTS idx_sessions_project ON sessions(project_name);
 CREATE INDEX IF NOT EXISTS idx_sessions_status ON sessions(status);
@@ -132,4 +162,11 @@ CREATE INDEX IF NOT EXISTS idx_blockers_session ON blockers(session_id);
 CREATE INDEX IF NOT EXISTS idx_blockers_project ON blockers(project_id);
 CREATE INDEX IF NOT EXISTS idx_documentations_session ON documentations(session_id);
 CREATE INDEX IF NOT EXISTS idx_documentations_type ON documentations(doc_type);
+
+-- Indexes for agent tables
+CREATE INDEX IF NOT EXISTS idx_agent_memory_agent ON agent_memory(agent_name);
+CREATE INDEX IF NOT EXISTS idx_agent_memory_session ON agent_memory(session_id);
+CREATE INDEX IF NOT EXISTS idx_symbol_registry_concept ON symbol_registry(concept);
+CREATE INDEX IF NOT EXISTS idx_symbol_registry_project ON symbol_registry(project_id);
+CREATE INDEX IF NOT EXISTS idx_symbol_registry_name ON symbol_registry(chosen_name);
 `;

@@ -435,6 +435,121 @@ interface SessionPlanner {
 }
 ```
 
+## 🤖 Sub-Agent System Requirements
+
+### Overview
+The Sub-Agent system enhances MyWorkFlow with specialized AI agents that work alongside Claude Code to provide domain-specific intelligence and automation.
+
+### Core Sub-Agents
+
+#### 1. Symbol Contractor Agent
+**Purpose**: Manage consistent naming across the codebase
+**Key Features**:
+- Symbol registry with project-specific patterns
+- Confidence scoring for naming suggestions
+- Evolution tracking for refactoring impact
+- Integration with existing code analysis
+
+#### 2. Session Orchestrator Agent  
+**Purpose**: Proactive session and context management
+**Key Features**:
+- Automatic checkpoint recommendations
+- Context usage forecasting
+- Emergency intervention at critical thresholds
+- Session planning optimization
+
+#### 3. Context Guardian Agent
+**Purpose**: Optimize and preserve context budget
+**Key Features**:
+- Pre-analysis of files before loading
+- Token usage prediction
+- Context compression suggestions
+- Pattern-based optimization
+
+#### 4. Documentation Curator Agent
+**Purpose**: Maintain accurate, reality-based documentation
+**Key Features**:
+- Integration with Reality Checker
+- Automatic documentation updates
+- Drift detection and correction
+- Template-based generation
+
+#### 5. Workflow Consistency Agent
+**Purpose**: Enforce patterns and best practices
+**Key Features**:
+- Code pattern analysis
+- Anti-pattern detection
+- Refactoring suggestions
+- Style enforcement
+
+### Technical Requirements
+
+#### Database Enhancements
+- Agent memory for learning from past decisions
+- Symbol registry for naming consistency
+- Activity tracking for performance monitoring
+- Task queue for asynchronous operations
+
+#### Context Management
+- Maximum 50% of total context for agent pool
+- Individual agent budgets with weights
+- Dynamic reallocation based on usage
+- Priority-based execution
+
+#### User Interface
+- Context allocation sliders
+- Agent activity visualization
+- Symbol registry browser
+- Performance metrics dashboard
+
+### Agent Integration Points
+
+#### MCP Tool Extensions
+```typescript
+// Symbol registry tools
+interface SymbolTools {
+  symbol_query(concept: string, context: string): SymbolSuggestion;
+  symbol_register(concept: string, name: string): RegistrationResult;
+  symbol_search(query: string): Symbol[];
+}
+
+// Agent memory tools
+interface AgentMemoryTools {
+  agent_memory_query(agent: string, action: string): Decision[];
+  agent_memory_record(decision: AgentDecision): void;
+  agent_activity_log(activity: AgentActivity): void;
+}
+```
+
+#### WebSocket Events
+```typescript
+// Agent-specific events
+interface AgentEvents {
+  'agent.suggestion': {
+    agent_name: string;
+    suggestion: any;
+    confidence: number;
+  };
+  'agent.decision': {
+    agent_name: string;
+    decision: string;
+    context: any;
+  };
+  'agent.conflict': {
+    agents: string[];
+    conflict_type: string;
+    resolution_needed: boolean;
+  };
+}
+```
+
+### Success Metrics
+- 50% reduction in naming inconsistencies
+- 90% reduction in context exhaustion incidents
+- <200ms agent response time (95th percentile)
+- >4.5/5 user satisfaction rating
+- 30% improvement in code quality metrics
+
 ## 🔒 Configuration
 
 ### Server Configuration

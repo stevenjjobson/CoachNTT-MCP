@@ -64,7 +64,7 @@ Add to your Claude Code settings:
 }
 ```
 
-### 3. Start Your First Session
+### 3. Start Your First Session (Enhanced with Sub-Agents)
 
 In Claude Code, simply ask:
 
@@ -74,7 +74,8 @@ Start a new development session for my React project. I need to build a user aut
 
 CoachNTT-MCP will automatically:
 - Initialize a tracked session
-- Monitor context usage
+- Monitor context usage with Context Guardian
+- Suggest consistent naming with Symbol Contractor
 - Create checkpoints at optimal moments
 - Generate handoff documentation when needed
 
@@ -99,6 +100,33 @@ CoachNTT-MCP will automatically:
 - **Automated Testing**: Ensure code works as Claude expects
 - **Documentation Sync**: Keep docs aligned with implementation
 - **Best Practices**: Built-in patterns for optimal code structure
+
+## 🤖 Intelligent Sub-Agents (Coming Soon)
+
+CoachNTT-MCP is expanding with specialized AI sub-agents that enhance Claude Code's capabilities:
+
+### Symbol Contractor Agent
+- **Consistent Naming**: Maintains naming conventions across your entire codebase
+- **Smart Suggestions**: Context-aware naming based on your project's patterns
+- **Refactoring Support**: Tracks symbol evolution and predicts impact
+
+### Session Orchestrator Agent
+- **Proactive Management**: Monitors context usage and suggests optimal checkpoints
+- **Emergency Intervention**: Prevents context exhaustion before it happens
+- **Session Planning**: Optimizes work distribution across sessions
+
+### Context Guardian Agent
+- **Smart Loading**: Pre-analyzes files to minimize token usage
+- **Optimization Tips**: Suggests ways to reduce context consumption
+- **Pattern Learning**: Remembers which operations are context-heavy
+
+### Additional Agents
+- **Documentation Curator**: Keeps docs in perfect sync with code
+- **Test Coverage Sentinel**: Ensures comprehensive test coverage
+- **Security Scanner**: Proactive vulnerability detection
+- **Performance Profiler**: Identifies and resolves bottlenecks
+
+These agents work seamlessly with Claude Code, providing specialized intelligence while preserving your context budget for actual development work.
 
 ## 🖥️ Interactive Dashboard
 

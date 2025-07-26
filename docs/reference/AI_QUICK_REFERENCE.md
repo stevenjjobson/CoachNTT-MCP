@@ -22,6 +22,91 @@ graph TD
     I --> M[(Reality Snapshots)]
     J --> N[(Doc Templates)]
 ```
+
+## 🤖 Sub-Agents Architecture
+
+### Enhanced Architecture with Sub-Agents
+
+```mermaid
+graph TD
+    A[MCP Client/Claude Code] -->|Commands| B[MyWorkFlow MCP Server]
+    
+    B --> C[Core Services]
+    B --> D[Sub-Agent Orchestrator]
+    
+    C --> E[Session Manager]
+    C --> F[Context Monitor]
+    C --> G[Reality Checker]
+    C --> H[Documentation Engine]
+    
+    D --> I[Symbol Contractor]
+    D --> J[Session Orchestrator]
+    D --> K[Context Guardian]
+    D --> L[Documentation Curator]
+    D --> M[Workflow Consistency]
+    D --> N[Project Graph Navigator]
+    D --> O[Test Coverage Sentinel]
+    D --> P[Security Scanner]
+    D --> Q[Performance Profiler]
+    D --> R[Integration Bridge]
+    
+    E --> S[(Session Store)]
+    F --> T[(Metrics DB)]
+    G --> U[(Reality Snapshots)]
+    H --> V[(Doc Templates)]
+    I --> W[(Symbol Registry)]
+    J --> X[(Agent Memory)]
+```
+
+### Sub-Agent Interfaces
+
+```typescript
+// Agent Base Interface
+interface SubAgent {
+  name: string;
+  description: string;
+  tools: string[];
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  contextBudget: number; // Percentage of agent pool
+}
+
+// Agent Memory Interface
+interface AgentMemory {
+  agent_name: string;
+  action_type: string;
+  input_context: string;
+  decision_made: string;
+  worked: boolean;
+  project_id: string;
+  session_id?: string;
+}
+
+// Symbol Registry Interface
+interface Symbol {
+  id: string;
+  concept: string;
+  chosen_name: string;
+  context_type: 'class' | 'function' | 'variable' | 'constant' | 'interface';
+  project_id: string;
+  confidence_score: number;
+  usage_count: number;
+}
+
+// Context Allocation Interface
+interface ContextAllocation {
+  agentPoolPercentage: number; // 0-50% of total context
+  agentWeights: {
+    symbolContractor: number;
+    sessionOrchestrator: number;
+    contextGuardian: number;
+    documentationCurator: number;
+    others: number;
+  };
+  autoBalance: boolean;
+  priorityMode: 'balanced' | 'quality' | 'speed';
+}
+```
+
 ## 🛠️ Interface Definitions
 
 ### Session Management Interfaces
@@ -663,6 +748,89 @@ interface CustomAction {
 }
 ```
 
+### Sub-Agent Tool Endpoints
+
+```typescript
+// symbol_query
+{
+  name: "symbol_query",
+  description: "Query naming convention for a concept",
+  inputSchema: {
+    type: "object",
+    properties: {
+      concept: { type: "string" },
+      context_type: { type: "string" },
+      project_id: { type: "string" }
+    },
+    required: ["concept", "context_type", "project_id"]
+  }
+}
+
+// symbol_register
+{
+  name: "symbol_register",
+  description: "Register a naming decision",
+  inputSchema: {
+    type: "object",
+    properties: {
+      concept: { type: "string" },
+      chosen_name: { type: "string" },
+      context_type: { type: "string" },
+      project_id: { type: "string" },
+      confidence_score: { type: "number" }
+    },
+    required: ["concept", "chosen_name", "context_type", "project_id"]
+  }
+}
+
+// agent_memory_query
+{
+  name: "agent_memory_query",
+  description: "Query agent past decisions",
+  inputSchema: {
+    type: "object",
+    properties: {
+      agent_name: { type: "string" },
+      action_type: { type: "string" },
+      project_id: { type: "string" }
+    },
+    required: ["agent_name", "action_type"]
+  }
+}
+
+// agent_task_enqueue
+{
+  name: "agent_task_enqueue",
+  description: "Add task to agent queue",
+  inputSchema: {
+    type: "object",
+    properties: {
+      agent_name: { type: "string" },
+      priority: { type: "number" },
+      task_data: { type: "object" }
+    },
+    required: ["agent_name", "task_data"]
+  }
+}
+
+// agent_activity_log
+{
+  name: "agent_activity_log",
+  description: "Log agent activity",
+  inputSchema: {
+    type: "object",
+    properties: {
+      agent_name: { type: "string" },
+      session_id: { type: "string" },
+      duration_ms: { type: "number" },
+      tokens_used: { type: "number" },
+      error: { type: "string" }
+    },
+    required: ["agent_name", "duration_ms"]
+  }
+}
+```
+
 ## ⚙️ Configuration Schemas
 
 ### Server Configuration (myworkflow.config.yml)
@@ -815,6 +983,65 @@ CREATE TABLE quick_actions (
   last_used INTEGER,
   created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
+
+-- Agent memory table
+CREATE TABLE IF NOT EXISTS agent_memory (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_name TEXT NOT NULL,
+  action_type TEXT NOT NULL,
+  input_context TEXT NOT NULL,
+  decision_made TEXT NOT NULL,
+  worked BOOLEAN,
+  project_id TEXT,
+  session_id TEXT,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+
+-- Symbol registry table  
+CREATE TABLE IF NOT EXISTS symbol_registry (
+  id TEXT PRIMARY KEY,
+  concept TEXT NOT NULL,
+  chosen_name TEXT NOT NULL,
+  context_type TEXT NOT NULL,
+  project_id TEXT NOT NULL,
+  confidence_score REAL DEFAULT 1.0,
+  usage_count INTEGER DEFAULT 1,
+  created_by_agent TEXT,
+  session_id TEXT,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+
+-- Agent activity tracking
+CREATE TABLE IF NOT EXISTS agent_activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_name TEXT NOT NULL,
+  session_id TEXT,
+  duration_ms INTEGER,
+  tokens_used INTEGER,
+  error TEXT,
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  FOREIGN KEY (session_id) REFERENCES sessions(id)
+);
+
+-- Agent task queue
+CREATE TABLE IF NOT EXISTS agent_queue (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  agent_name TEXT NOT NULL,
+  priority INTEGER DEFAULT 5,
+  task_data TEXT NOT NULL,
+  status TEXT DEFAULT 'pending',
+  created_at INTEGER DEFAULT (strftime('%s', 'now')),
+  completed_at INTEGER
+);
+
+-- Indexes for agent tables
+CREATE INDEX idx_agent_memory_lookup ON agent_memory(agent_name, action_type, project_id);
+CREATE UNIQUE INDEX idx_symbol_lookup ON symbol_registry(concept, context_type, project_id);
+CREATE INDEX idx_agent_activity_session ON agent_activity(session_id);
+CREATE INDEX idx_agent_queue_status ON agent_queue(status, priority);
 ```
 
 ### Environment Variables

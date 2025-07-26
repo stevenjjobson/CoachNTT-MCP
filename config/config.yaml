@@ -1,0 +1,115 @@
+server:
+  name: "MyWorkFlow MCP Server"
+  version: "1.0.0"
+
+websocket:
+  host: "localhost"
+  port: 8080
+  authentication: true
+  maxConnections: 10
+  connectionTimeout: 300000  # 5 minutes
+  healthCheckPort: 8081
+
+database:
+  path: "./data/myworkflow.db"
+  backup:
+    enabled: true
+    interval: 3600
+    retention: 7
+
+context:
+  defaultBudget: 100000
+  warningThreshold: 0.8
+  criticalThreshold: 0.95
+
+logging:
+  level: "info"
+  file: "./logs/server.log"
+  console: true
+  retention: 30
+
+paths:
+  projects: "./projects"
+  documentation: "./docs"
+  logs: "./logs"
+
+# Sub-Agent Configuration
+agents:
+  enabled: true
+  maxContextPercentage: 50  # Maximum 50% of total context for agent pool
+  
+  # Individual agent settings
+  symbol_contractor:
+    enabled: true
+    priority: high
+    contextAllocation: 15  # 15% of total context
+    confidenceThreshold: 0.8
+    
+  session_orchestrator:
+    enabled: true
+    priority: medium
+    contextAllocation: 20  # 20% of total context
+    checkpointInterval: 25  # Suggest checkpoint at 25% context usage
+    
+  context_guardian:
+    enabled: true
+    priority: low
+    contextAllocation: 10  # 10% of total context
+    optimizationThreshold: 0.7  # Start optimizing at 70% usage
+    
+  documentation_curator:
+    enabled: false  # Disabled initially
+    priority: low
+    contextAllocation: 5
+    
+  # Agent interaction settings
+  interaction:
+    logAllDecisions: true
+    conflictResolution: "user"  # user, priority, or first
+    memoryRetention: 90  # days
+    sharedMemoryReadOnly: true
+    
+  # Performance settings
+  performance:
+    maxResponseTime: 200  # milliseconds
+    maxMemoryPerAgent: 100  # MB
+    parallelExecution: false  # Start with sequential
+    
+# Session configuration with agent support
+session:
+  defaultContextLimit: 100000
+  warningThreshold: 0.7
+  criticalThreshold: 0.85
+  checkpointInterval: 3600
+  
+  # Agent integration
+  agentAssisted:
+    enabled: true
+    autoCheckpoint: true
+    symbolSuggestions: true
+    contextWarnings: true
+
+# Reality check configuration
+reality_check:
+  autoCheckEnabled: true
+  checkFrequency: "daily"
+  fixDocumentation: false
+  
+# Documentation settings
+documentation:
+  templatePath: "./templates"
+  autoGenerateSummaries: true
+  enforceRealityPrinciples: true
+  
+# Monitoring settings
+monitoring:
+  trackMetrics: true
+  retentionDays: 90
+  exportFormat: "json"
+  
+  # Agent-specific metrics
+  agentMetrics:
+    enabled: true
+    trackDecisions: true
+    trackPerformance: true
+    trackConflicts: true
