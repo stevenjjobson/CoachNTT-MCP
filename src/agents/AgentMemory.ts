@@ -46,19 +46,20 @@ export class AgentMemory {
     projectId: string,
     decision: AgentDecision
   ): Promise<void> {
+    // Ensure all values are SQLite-compatible types
     this.dbConnection.run(
       `INSERT INTO agent_memory (
         agent_name, action_type, input_context, decision_made,
         worked, project_id, session_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [
-        decision.agentName,
-        decision.actionType,
-        decision.inputContext,
-        decision.decisionMade,
-        true, // Default to true, can be updated later if it didn't work
-        projectId,
-        sessionId
+        decision.agentName || '',
+        decision.actionType || '',
+        decision.inputContext || '',
+        decision.decisionMade || '',
+        1, // SQLite uses 1/0 for boolean
+        projectId || null,
+        sessionId || null
       ]
     );
   }

@@ -1,6 +1,8 @@
 import { AgentMemory, SymbolEntry } from '../agents/AgentMemory';
 import { SimpleAgentOrchestrator } from '../agents/SimpleAgentOrchestrator';
 import { SymbolContractor } from '../agents/SymbolContractor';
+import { SessionOrchestrator } from '../agents/SessionOrchestrator';
+import { ContextGuardian } from '../agents/ContextGuardian';
 import { AgentContext, AgentSuggestion } from '../agents/base/Agent';
 import { BehaviorSubject } from 'rxjs';
 
@@ -18,6 +20,8 @@ export class AgentManager {
   private agentMemory: AgentMemory;
   private orchestrator: SimpleAgentOrchestrator;
   private symbolContractor: SymbolContractor;
+  private sessionOrchestrator: SessionOrchestrator;
+  private contextGuardian: ContextGuardian;
   private agentStatus$ = new BehaviorSubject<AgentStatus>({
     enabled: true,
     suggestions: [],
@@ -31,9 +35,15 @@ export class AgentManager {
     // Initialize orchestrator
     this.orchestrator = new SimpleAgentOrchestrator(this.agentMemory);
     
-    // Initialize and register agents
+    // Initialize and register all agents
     this.symbolContractor = new SymbolContractor(this.agentMemory);
+    this.sessionOrchestrator = new SessionOrchestrator(this.agentMemory);
+    this.contextGuardian = new ContextGuardian(this.agentMemory);
+    
+    // Register agents in priority order
     this.orchestrator.registerAgent(this.symbolContractor);
+    this.orchestrator.registerAgent(this.sessionOrchestrator);
+    this.orchestrator.registerAgent(this.contextGuardian);
     
     // Set up orchestrator event listeners
     this.setupOrchestratorEvents();
@@ -56,7 +66,15 @@ export class AgentManager {
       timestamp: Date.now()
     };
     
+    // Check if agents are enabled
+    if (!this.agentStatus$.value.enabled) {
+      console.log('[AgentManager] Agents are disabled');
+      return { suggestions: [] };
+    }
+    
+    console.log('[AgentManager] Running agents with context:', context);
     const suggestions = await this.orchestrator.executeAgents(context);
+    console.log('[AgentManager] Agents returned suggestions:', suggestions);
     
     // Update status
     const currentStatus = this.agentStatus$.value;
@@ -184,7 +202,40 @@ export class AgentManager {
     success_rate: number;
     recent_decisions: any[];
   }> {
-    const agentName = params.agent_name || this.symbolContractor.name;
+    let agentName = params.agent_name;
+    
+    // If no agent name specified, aggregate stats from all agents
+    if (!agentName) {
+      // Get stats for all agents
+      const allAgents = this.orchestrator.getAgents();
+      let totalDecisions = 0;
+      let totalSuccessRate = 0;
+      const allDecisions: any[] = [];
+      
+      for (const agent of allAgents) {
+        const decisions = await this.agentMemory.getRecentDecisions(
+          agent.name,
+          params.project_id,
+          5
+        );
+        allDecisions.push(...decisions);
+        totalDecisions += decisions.length;
+        
+        const successRate = await this.agentMemory.getAgentSuccessRate(
+          agent.name,
+          params.project_id
+        );
+        totalSuccessRate += successRate;
+      }
+      
+      return {
+        total_decisions: totalDecisions,
+        success_rate: allAgents.length > 0 ? totalSuccessRate / allAgents.length : 1,
+        recent_decisions: allDecisions.slice(0, 20)
+      };
+    }
+    
+    // Get stats for specific agent
     const decisions = await this.agentMemory.getRecentDecisions(
       agentName,
       params.project_id,
