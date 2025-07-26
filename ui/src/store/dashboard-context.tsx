@@ -23,6 +23,7 @@ type DashboardAction =
   | { type: 'SET_VELOCITY'; payload: any }
   | { type: 'SET_ACTIONS'; payload: any[] }
   | { type: 'ADD_TOOL_LOG'; payload: ToolExecutionLog }
+  | { type: 'SET_AGENT_SUGGESTIONS'; payload: any[] }
   | { type: 'UPDATE_UI_STATE'; payload: Partial<DashboardState['uiState']> };
 
 const initialState: DashboardState = {
@@ -32,6 +33,7 @@ const initialState: DashboardState = {
   activeDiscrepancies: [],
   suggestedActions: [],
   toolExecutionLogs: [],
+  agentSuggestions: [],
   uiState: {
     expanded: true,
     refreshInterval: 5000,
@@ -76,6 +78,9 @@ function dashboardReducer(state: DashboardState, action: DashboardAction): Dashb
         ...state,
         toolExecutionLogs: [...state.toolExecutionLogs, action.payload].slice(-100), // Keep last 100 logs
       };
+    
+    case 'SET_AGENT_SUGGESTIONS':
+      return { ...state, agentSuggestions: action.payload };
     
     case 'UPDATE_UI_STATE':
       return {
@@ -171,6 +176,12 @@ function handleWebSocketMessage(message: WSMessage, dispatch: React.Dispatch<Das
       case 'tool:execution':
         if (message.data.log) {
           dispatch({ type: 'ADD_TOOL_LOG', payload: message.data.log });
+        }
+        break;
+      
+      case 'agent:suggestions':
+        if (message.data.suggestions) {
+          dispatch({ type: 'SET_AGENT_SUGGESTIONS', payload: message.data.suggestions });
         }
         break;
     }

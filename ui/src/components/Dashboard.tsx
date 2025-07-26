@@ -7,10 +7,31 @@ import ProjectTracker from './ProjectTracker';
 import QuickActions from './QuickActions';
 import ConnectionStatus from './ConnectionStatus';
 import { MCPInteractionLog } from './MCPInteractionLog';
+import AgentSuggestions from './AgentSuggestions';
 import { AlertCircle } from 'lucide-react';
 
 export default function Dashboard() {
-  const { state } = useDashboard();
+  const { state, tools } = useDashboard();
+
+  // Handlers for agent suggestions
+  const handleAcceptSuggestion = async (suggestion: any) => {
+    if (suggestion.suggestedAction) {
+      try {
+        await tools.executeTool(
+          suggestion.suggestedAction.tool,
+          suggestion.suggestedAction.params
+        );
+      } catch (error) {
+        console.error('Failed to execute suggestion:', error);
+      }
+    }
+  };
+
+  const handleRejectSuggestion = async (suggestion: any) => {
+    // For now, just log the rejection. In the future, we can record this
+    // in agent_memory for learning
+    console.log('Rejected suggestion:', suggestion);
+  };
 
   if (!state.connected) {
     return (
@@ -59,6 +80,15 @@ export default function Dashboard() {
 
         {/* Full Width Sections */}
         <div className="mt-8 space-y-8">
+          {/* Agent Suggestions */}
+          {state.agentSuggestions.length > 0 && (
+            <AgentSuggestions
+              suggestions={state.agentSuggestions}
+              onAccept={handleAcceptSuggestion}
+              onReject={handleRejectSuggestion}
+            />
+          )}
+          
           {/* MCP Interaction Log */}
           <div>
             <MCPInteractionLog />

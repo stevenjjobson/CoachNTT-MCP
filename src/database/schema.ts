@@ -132,8 +132,7 @@ CREATE TABLE IF NOT EXISTS agent_memory (
   worked BOOLEAN DEFAULT TRUE,
   project_id TEXT,
   session_id TEXT,
-  created_at INTEGER DEFAULT (strftime('%s', 'now')),
-  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+  created_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
 -- Symbol registry for naming consistency
@@ -148,8 +147,7 @@ CREATE TABLE IF NOT EXISTS symbol_registry (
   created_by_agent TEXT,
   session_id TEXT,
   created_at INTEGER DEFAULT (strftime('%s', 'now')),
-  updated_at INTEGER DEFAULT (strftime('%s', 'now')),
-  FOREIGN KEY (session_id) REFERENCES sessions(id) ON DELETE CASCADE
+  updated_at INTEGER DEFAULT (strftime('%s', 'now'))
 );
 
 -- Create indexes for performance

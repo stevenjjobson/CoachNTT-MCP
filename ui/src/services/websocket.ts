@@ -131,6 +131,7 @@ export class WebSocketService {
       'project.status',
       'suggestions.actions',
       'tool:execution',  // Added tool execution events
+      'agent:suggestions',  // Added agent suggestions events
     ];
 
     console.log('[WebSocket] Subscribing to topics:', topics);

@@ -17,12 +17,13 @@ interface ClientConnection {
 }
 
 interface WebSocketMessage {
-  type: 'subscribe' | 'unsubscribe' | 'authenticate' | 'ping' | 'execute';
+  type: 'subscribe' | 'unsubscribe' | 'authenticate' | 'ping' | 'execute' | 'event';
   topic?: string;
   auth?: string;
   params?: Record<string, any>;
   tool?: string;
   requestId?: string;
+  data?: any;
 }
 
 interface WebSocketResponse {
@@ -165,6 +166,18 @@ export class MyWorkFlowWebSocketServer {
         }
         break;
       
+      case 'event':
+        if (!client.authenticated) {
+          this.sendError(client, 'Authentication required');
+          return;
+        }
+        // Handle events from MCP server (like agent suggestions)
+        if (message.topic && message.data) {
+          console.log(`[WS] Broadcasting event from MCP: ${message.topic}`);
+          this.broadcast(message.topic, message.data);
+        }
+        break;
+      
       default:
         this.sendError(client, 'Unknown message type');
     }
@@ -291,6 +304,14 @@ export class MyWorkFlowWebSocketServer {
         // Tool execution is event-based, not observable-based
         // Just mark the client as subscribed, events will be broadcast automatically
         console.log(`Client ${client.id} subscribed to tool:execution events`);
+        // Store a dummy subscription to track it
+        client.subscriptions.set(topic, { unsubscribe: () => {} } as any);
+        return;
+
+      case 'agent:suggestions':
+        // Agent suggestions are event-based, not observable-based
+        // Just mark the client as subscribed, events will be broadcast automatically
+        console.log(`Client ${client.id} subscribed to agent:suggestions events`);
         // Store a dummy subscription to track it
         client.subscriptions.set(topic, { unsubscribe: () => {} } as any);
         return;

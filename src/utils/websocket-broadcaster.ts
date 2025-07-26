@@ -99,6 +99,27 @@ export class WebSocketBroadcaster {
     console.log(`[MCP->WS] Broadcasted tool execution: ${tool}`);
   }
 
+  // Broadcast agent suggestions to the WebSocket server
+  broadcastAgentSuggestions(suggestions: any[], sessionId?: string, projectId?: string): void {
+    if (!this.isConnected) {
+      console.log('[MCP->WS] Not connected, skipping agent suggestions broadcast');
+      return;
+    }
+
+    this.send({
+      type: 'event',
+      topic: 'agent:suggestions',
+      data: {
+        suggestions,
+        sessionId,
+        projectId,
+        timestamp: Date.now()
+      }
+    });
+
+    console.log(`[MCP->WS] Broadcasted ${suggestions.length} agent suggestions`);
+  }
+
   // Trigger a refresh of specific topics
   triggerRefresh(topics: string[]): void {
     if (!this.isConnected) {

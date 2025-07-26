@@ -121,6 +121,21 @@ export interface ToolExecutionLog {
   status: 'pending' | 'success' | 'error';
 }
 
+// Agent Types
+export interface AgentSuggestion {
+  id: string;
+  agentName: string;
+  type: 'naming' | 'checkpoint' | 'context' | 'quality';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  actionRequired: boolean;
+  suggestedAction?: {
+    tool: string;
+    params: Record<string, any>;
+  };
+}
+
 // Dashboard State
 export interface DashboardState {
   connected: boolean;
@@ -133,6 +148,7 @@ export interface DashboardState {
   velocityMetrics?: VelocityMetrics;
   suggestedActions: QuickAction[];
   toolExecutionLogs: ToolExecutionLog[];
+  agentSuggestions: AgentSuggestion[];
   uiState: {
     expanded: boolean;
     refreshInterval: number;

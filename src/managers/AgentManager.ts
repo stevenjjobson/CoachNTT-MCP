@@ -5,6 +5,7 @@ import { SessionOrchestrator } from '../agents/SessionOrchestrator';
 import { ContextGuardian } from '../agents/ContextGuardian';
 import { AgentContext, AgentSuggestion } from '../agents/base/Agent';
 import { BehaviorSubject } from 'rxjs';
+import { WebSocketBroadcaster } from '../utils/websocket-broadcaster';
 
 export interface AgentStatus {
   enabled: boolean;
@@ -22,6 +23,7 @@ export class AgentManager {
   private symbolContractor: SymbolContractor;
   private sessionOrchestrator: SessionOrchestrator;
   private contextGuardian: ContextGuardian;
+  private wsBroadcaster: WebSocketBroadcaster;
   private agentStatus$ = new BehaviorSubject<AgentStatus>({
     enabled: true,
     suggestions: [],
@@ -39,6 +41,9 @@ export class AgentManager {
     this.symbolContractor = new SymbolContractor(this.agentMemory);
     this.sessionOrchestrator = new SessionOrchestrator(this.agentMemory);
     this.contextGuardian = new ContextGuardian(this.agentMemory);
+    
+    // Initialize WebSocket broadcaster
+    this.wsBroadcaster = WebSocketBroadcaster.getInstance();
     
     // Register agents in priority order
     this.orchestrator.registerAgent(this.symbolContractor);
@@ -75,6 +80,15 @@ export class AgentManager {
     console.log('[AgentManager] Running agents with context:', context);
     const suggestions = await this.orchestrator.executeAgents(context);
     console.log('[AgentManager] Agents returned suggestions:', suggestions);
+    
+    // Broadcast suggestions via WebSocket
+    if (suggestions.length > 0) {
+      this.wsBroadcaster.broadcastAgentSuggestions(
+        suggestions,
+        params.session_id,
+        params.project_id
+      );
+    }
     
     // Update status
     const currentStatus = this.agentStatus$.value;
