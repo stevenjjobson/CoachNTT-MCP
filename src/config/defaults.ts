@@ -9,8 +9,8 @@ export const DEFAULT_CONFIG: MCPConfig = {
   },
   
   websocket: {
-    port: 8080,
-    host: 'localhost',
+    port: parseInt(process.env.MCP_WEBSOCKET_PORT || '8080'),
+    host: process.env.MCP_WEBSOCKET_HOST || 'localhost',
     authToken: process.env.MCP_WEBSOCKET_AUTH || 'myworkflow-secret',
     heartbeatInterval: 30000, // 30 seconds
     maxConnections: 100,

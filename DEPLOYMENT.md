@@ -2,12 +2,14 @@
 
 ## Overview
 
-CoachNTT-MCP is designed primarily for Claude Code integration, with additional deployment options:
+CoachNTT-MCP uses a unified Docker deployment that includes:
 
-1. **Claude Code Integration** (Recommended) - Enhanced AI development with Claude
-2. **Standalone MCP Server** - For other MCP-compatible clients
-3. **WebSocket Server** - For web UI dashboards
-4. **Full Stack** - Complete deployment with all features
+- **MCP Server** - For Claude Code integration via WebSocket
+- **WebSocket API** - Real-time communication hub
+- **Web Dashboard** - Interactive monitoring UI
+- **Health Monitoring** - Service health checks
+
+All components run in a single Docker container for simplicity and consistency.
 
 ## Prerequisites
 
@@ -22,11 +24,12 @@ CoachNTT-MCP is designed primarily for Claude Code integration, with additional 
 git clone https://github.com/your-username/CoachNTT-MCP.git
 cd CoachNTT-MCP
 
-# Install dependencies
-npm install
+# Start with Docker (recommended)
+docker-compose up -d
 
-# Build the project
-npm run build
+# Or build from source first
+npm run docker:build
+docker-compose up -d
 ```
 
 ## Configuration
@@ -37,9 +40,9 @@ Create a `.env` file:
 
 ```env
 # Server Configuration
-MCP_HOST=localhost
-MCP_PORT=3000
-WS_PORT=3001
+MCP_WEBSOCKET_HOST=localhost
+MCP_WEBSOCKET_PORT=8080
+MCP_HEALTH_PORT=8081
 
 # Database
 DB_PATH=./data/myworkflow.db
@@ -92,11 +95,24 @@ paths:
   logs: "./logs"
 ```
 
-## Deployment Options
+## Docker Deployment (Required)
 
-### Option 1: Claude Code Integration (Recommended)
+### Starting the Services
 
-The primary use case for CoachNTT-MCP is enhancing Claude Code development sessions:
+```bash
+# Development mode with hot reload
+npm run docker:dev
+
+# Production mode
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+### Claude Code Configuration
+
+Configure Claude Code to connect via WebSocket:
 
 #### Step 1: Build and Install
 
@@ -274,7 +290,7 @@ server {
     server_name your-domain.com;
 
     location /ws {
-        proxy_pass http://localhost:3001;
+        proxy_pass http://localhost:8080;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";

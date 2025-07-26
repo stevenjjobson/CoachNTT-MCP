@@ -105,7 +105,7 @@ npm test
 npm test -- --coverage
 
 # Access UI
-http://localhost:3001
+http://localhost:5173
 ```
 
 ## Known Issues & Solutions

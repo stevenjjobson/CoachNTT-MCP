@@ -47,7 +47,7 @@ export class MyWorkFlowWebSocketServer {
   };
   private toolHandler: ToolExecutionHandler;
 
-  constructor(port: number = 8080) {
+  constructor(port: number = parseInt(process.env.MCP_WEBSOCKET_PORT || '8080')) {
     this.httpServer = createServer();
     this.wss = new WebSocketServer({ server: this.httpServer });
     
@@ -457,5 +457,10 @@ export class MyWorkFlowWebSocketServer {
         this.sendEvent(client, topic, data);
       }
     });
+  }
+
+  // Get the tool handler for MCP bridge integration
+  public getToolHandler(): ToolExecutionHandler {
+    return this.toolHandler;
   }
 }

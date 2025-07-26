@@ -32,18 +32,17 @@ When using Claude Code for development, context is everything. CoachNTT-MCP prov
 - [UI Integration Guide](docs/guides/ui-integration-guide.md) - Backend-frontend integration patterns
 - [Productivity Guide](docs/guides/productivity-guide.md) - Best practices and success patterns
 
-## 🚀 Quick Start with Claude Code
+## 🚀 Quick Start with Docker
 
-### 1. Install CoachNTT-MCP
+### 1. Clone and Setup
 
 ```bash
 # Clone repository
 git clone https://github.com/yourusername/CoachNTT-MCP.git
 cd CoachNTT-MCP
 
-# Install and build
-npm install
-npm run build
+# Build and start with Docker
+docker-compose up -d
 ```
 
 ### 2. Configure Claude Code
@@ -55,9 +54,10 @@ Add to your Claude Code settings:
   "mcpServers": {
     "coachntt": {
       "command": "node",
-      "args": ["/path/to/CoachNTT-MCP/dist/index.js"],
+      "args": ["/path/to/CoachNTT-MCP/dist/mcp-websocket-client.js"],
       "env": {
-        "NODE_ENV": "production"
+        "MCP_WEBSOCKET_URL": "ws://localhost:8080",
+        "MCP_AUTH_TOKEN": "your-auth-token"
       }
     }
   }
@@ -139,21 +139,12 @@ CoachNTT-MCP includes a modern web dashboard for real-time monitoring and contro
 - **Project Analytics**: Analyze development velocity and identify patterns
 - **Quick Actions**: Execute common tasks through an intuitive UI
 
-### Starting the Dashboard
+### Accessing the Dashboard
 
-```bash
-# Install all dependencies (including UI)
-npm run install:all
-
-# Start the dashboard environment
-npm run dev:all
-
-# Or start components separately:
-npm run start:server  # WebSocket server
-npm run dev:ui       # UI development server
-```
-
-Access the dashboard at `http://localhost:5173`
+Once Docker is running, access the dashboard at:
+- **Dashboard UI**: `http://localhost:5173`
+- **WebSocket API**: `ws://localhost:8080`
+- **Health Check**: `http://localhost:8081/health`
 
 ## 🏗️ Project Structure
 

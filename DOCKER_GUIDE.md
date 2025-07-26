@@ -59,8 +59,8 @@ docker-compose up -d
 # Start with hot reload
 ./scripts/docker-dev.sh
 
-# Or manually with docker-compose
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+# Or directly with docker-compose
+docker-compose up
 ```
 
 ### Development Features

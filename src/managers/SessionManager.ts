@@ -633,7 +633,7 @@ export class SessionManager {
 
   async getWebSocketDetails(params: { session_id: string }): Promise<unknown> {
     return {
-      url: 'ws://localhost:3000/realtime',
+      url: 'ws://localhost:8080/realtime',
       session_id: params.session_id,
       channels: [
         `session:${params.session_id}`,

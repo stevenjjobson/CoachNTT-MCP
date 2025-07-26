@@ -17,7 +17,7 @@ export default function Dashboard() {
   const handleAcceptSuggestion = async (suggestion: any) => {
     if (suggestion.suggestedAction) {
       try {
-        await tools.executeTool(
+        await tools.callTool(
           suggestion.suggestedAction.tool,
           suggestion.suggestedAction.params
         );

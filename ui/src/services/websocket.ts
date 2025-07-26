@@ -17,7 +17,7 @@ export class WebSocketService {
   private pendingRequests: Map<string, { resolve: (value: any) => void; reject: (error: any) => void }> = new Map();
   private reconnectTimer: number | null = null;
 
-  constructor(url: string = 'ws://localhost:8080') {
+  constructor(url: string = `ws://localhost:${import.meta.env.MCP_WEBSOCKET_PORT || '8080'}`) {
     this.url = url;
   }
 

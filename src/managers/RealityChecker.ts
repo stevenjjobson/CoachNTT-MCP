@@ -579,7 +579,7 @@ export class RealityChecker {
       let totalLines = 0;
       srcFiles.forEach(file => {
         const fullPath = join(basePath, file);
-        if (existsSync(fullPath)) {
+        if (existsSync(fullPath) && statSync(fullPath).isFile()) {
           const content = readFileSync(fullPath, 'utf8');
           const lines = content.split('\n').filter(line => 
             line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('*')

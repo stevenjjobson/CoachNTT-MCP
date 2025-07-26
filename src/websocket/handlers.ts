@@ -33,6 +33,8 @@ export interface ToolExecutionLog {
 }
 
 export class ToolExecutionHandler extends EventEmitter {
+  private mcpTools: Map<string, (params: any) => Promise<any>> = new Map();
+  
   constructor(
     private managers: {
       session: SessionManager;
@@ -43,6 +45,14 @@ export class ToolExecutionHandler extends EventEmitter {
     }
   ) {
     super();
+  }
+
+  /**
+   * Register an MCP tool with the handler
+   */
+  registerTool(name: string, handler: (params: any) => Promise<any>): void {
+    this.mcpTools.set(name, handler);
+    console.log(`[ToolHandler] Registered MCP tool: ${name}`);
   }
 
   async execute(request: ToolExecutionRequest): Promise<ToolExecutionResponse> {
@@ -94,7 +104,21 @@ export class ToolExecutionHandler extends EventEmitter {
     try {
       let result: any;
       
-      switch (tool) {
+      // Check if this is an MCP tool first
+      if (this.mcpTools.has(tool)) {
+        console.log(`[ToolHandler] Executing MCP tool: ${tool}`);
+        result = await this.mcpTools.get(tool)!(params);
+      } else if (tool === '_list_tools') {
+        // Special case: list all available tools
+        result = {
+          tools: Array.from(this.mcpTools.keys()).map(name => ({
+            name,
+            description: `MCP tool: ${name}`
+          }))
+        };
+      } else {
+        // Fall back to hardcoded UI tool mappings
+        switch (tool) {
         // Session Tools
         case 'startSession':
           console.log('[ToolHandler] Starting new session with params:', params);
@@ -276,6 +300,7 @@ export class ToolExecutionHandler extends EventEmitter {
           
         default:
           throw new Error(`Unknown tool: ${tool}`);
+        }
       }
       
       // Update log entry with success

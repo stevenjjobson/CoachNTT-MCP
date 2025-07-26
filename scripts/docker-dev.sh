@@ -24,11 +24,11 @@ fi
 
 # Build images if needed
 echo "🔨 Building Docker images..."
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml build
+docker-compose build
 
 # Start services
 echo "🎯 Starting services..."
-docker-compose -f docker-compose.yml -f docker-compose.dev.yml up -d
+docker-compose up -d
 
 # Wait for services to be healthy
 echo "⏳ Waiting for services to be ready..."
@@ -46,7 +46,7 @@ fi
 echo ""
 echo "🎉 CoachNTT-MCP Docker Development Environment Ready!"
 echo "=================================================="
-echo "📊 Dashboard UI:    http://localhost:5174"
+echo "📊 Dashboard UI:    http://localhost:5173"
 echo "🔌 WebSocket:       ws://localhost:8080"
 echo "🏥 Health Check:    http://localhost:8081/health"
 echo "📝 Logs:            docker-compose logs -f"
@@ -60,5 +60,5 @@ echo "💡 The MCP server (for Claude Code) runs separately via stdio"
 read -p "📜 Follow logs? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    docker-compose -f docker-compose.yml -f docker-compose.dev.yml logs -f
+    docker-compose logs -f
 fi

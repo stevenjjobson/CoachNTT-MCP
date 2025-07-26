@@ -167,7 +167,7 @@ export function MCPInteractionLog({ maxItems = 100 }: MCPInteractionLogProps) {
                             Result:
                           </div>
                           <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-32 overflow-y-auto">
-                            {formatParams(log.result)}
+                            {String(formatParams(log.result))}
                           </pre>
                         </div>
                       )}

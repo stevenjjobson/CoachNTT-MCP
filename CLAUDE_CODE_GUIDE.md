@@ -11,13 +11,12 @@ CoachNTT-MCP is designed specifically to enhance your Claude Code experience by 
 
 ## Installation & Setup
 
-### 1. Install CoachNTT-MCP
+### 1. Start CoachNTT-MCP with Docker
 
 ```bash
 git clone https://github.com/yourusername/CoachNTT-MCP.git
 cd CoachNTT-MCP
-npm install
-npm run build
+docker-compose up -d
 ```
 
 ### 2. Configure Claude Code
@@ -33,17 +32,17 @@ Add the MCP server configuration:
   "mcpServers": {
     "coachntt": {
       "command": "node",
-      "args": ["/absolute/path/to/CoachNTT-MCP/dist/index.js"],
+      "args": ["/absolute/path/to/CoachNTT-MCP/dist/mcp-websocket-client.js"],
       "env": {
-        "NODE_ENV": "production",
-        "COACH_PROJECT_ROOT": "${workspaceFolder}",
-        "AUTO_CHECKPOINT": "true",
-        "CHECKPOINT_INTERVAL": "25"
+        "MCP_WEBSOCKET_URL": "ws://localhost:8080",
+        "MCP_AUTH_TOKEN": "your-auth-token"
       }
     }
   }
 }
 ```
+
+**Note**: The MCP server now runs inside Docker and communicates via WebSocket, allowing remote connections and better integration with the dashboard.
 
 ### 3. Verify Connection
 
@@ -228,10 +227,11 @@ Claude: I'll write test specifications first (low context),
 
 If Claude can't connect to CoachNTT:
 
-1. Check the path in settings.json is absolute
-2. Ensure the server is built (`npm run build`)
-3. Try running manually: `node /path/to/dist/index.js`
-4. Check Claude Code logs for errors
+1. Ensure Docker is running: `docker-compose ps`
+2. Check the WebSocket URL in settings.json
+3. Verify the server is healthy: `curl http://localhost:8081/health`
+4. Check Docker logs: `docker-compose logs -f`
+5. Ensure the auth token matches your Docker configuration
 
 ### Session Recovery
 

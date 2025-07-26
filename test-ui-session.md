@@ -5,7 +5,7 @@
 1. **Open the Dashboard**
    ```bash
    # Open in your browser
-   http://localhost:3001
+   http://localhost:5173
    ```
 
 2. **Open Browser Console**

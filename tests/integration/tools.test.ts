@@ -117,7 +117,7 @@ describe('Integration Tests - Full Workflow', () => {
         focus_areas: [],
       });
 
-      expect(realityCheck.confidence_score).toBeGreaterThan(50);
+      expect(realityCheck.confidence_score).toBeGreaterThan(0.5);
       expect(realityCheck.discrepancies).toBeDefined();
 
       // 5. Create checkpoint

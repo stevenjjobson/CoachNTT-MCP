@@ -2,9 +2,10 @@
   "mcpServers": {
     "coachntt": {
       "command": "node",
-      "args": ["/mnt/c/Users/Steve/OneDrive/Documents/Development/CoachNTT-MCP/dist/index.js"],
+      "args": ["/mnt/c/Users/Steve/OneDrive/Documents/Development/CoachNTT-MCP/dist/mcp-websocket-client.js"],
       "env": {
-        "NODE_ENV": "development"
+        "MCP_WEBSOCKET_URL": "ws://localhost:8080",
+        "MCP_AUTH_TOKEN": "myworkflow-secret"
       }
     }
   }

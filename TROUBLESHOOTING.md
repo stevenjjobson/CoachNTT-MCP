@@ -42,7 +42,7 @@ docker-compose build --no-cache websocket-server
 
 **Solution**:
 - File is already created at `ui/tsconfig.node.json`
-- Ensure it's mounted in docker-compose.dev.yml (already fixed)
+- Ensure it's mounted in docker-compose.yml
 
 ### 4. WebSocket Server Not Starting
 
@@ -228,7 +228,7 @@ nano .env
 
 **UI Changes**:
 - Hot reload works automatically
-- If not, check volume mounts in docker-compose.dev.yml
+- If not, check volume mounts in docker-compose.yml
 
 ### 2. Adding Dependencies
 
