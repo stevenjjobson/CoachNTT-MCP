@@ -11,6 +11,7 @@ import { ContextMonitor } from '../managers/ContextMonitor';
 import { RealityChecker } from '../managers/RealityChecker';
 import { DocumentationEngine } from '../managers/DocumentationEngine';
 import { ProjectTracker } from '../managers/ProjectTracker';
+import { AgentManager } from '../managers/AgentManager';
 import { createToolRegistry } from './tools';
 import { WebSocketBroadcaster } from '../utils/websocket-broadcaster';
 
@@ -22,6 +23,7 @@ export class MyWorkFlowServer {
   private realityChecker: RealityChecker;
   private documentationEngine: DocumentationEngine;
   private projectTracker: ProjectTracker;
+  private agentManager: AgentManager;
   private wsBroadcaster: WebSocketBroadcaster;
 
   constructor() {
@@ -42,6 +44,7 @@ export class MyWorkFlowServer {
     this.realityChecker = new RealityChecker();
     this.documentationEngine = new DocumentationEngine();
     this.projectTracker = new ProjectTracker();
+    this.agentManager = new AgentManager();
     this.wsBroadcaster = WebSocketBroadcaster.getInstance();
 
     this.tools = createToolRegistry({
@@ -50,6 +53,7 @@ export class MyWorkFlowServer {
       realityChecker: this.realityChecker,
       documentationEngine: this.documentationEngine,
       projectTracker: this.projectTracker,
+      agentManager: this.agentManager,
     });
 
     this.setupHandlers();

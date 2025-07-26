@@ -4,6 +4,7 @@ import type { ContextMonitor } from '../managers/ContextMonitor';
 import type { RealityChecker } from '../managers/RealityChecker';
 import type { DocumentationEngine } from '../managers/DocumentationEngine';
 import type { ProjectTracker } from '../managers/ProjectTracker';
+import type { AgentManager } from '../managers/AgentManager';
 
 interface Managers {
   sessionManager: SessionManager;
@@ -11,6 +12,7 @@ interface Managers {
   realityChecker: RealityChecker;
   documentationEngine: DocumentationEngine;
   projectTracker: ProjectTracker;
+  agentManager: AgentManager;
 }
 
 export function createToolRegistry(managers: Managers): ToolRegistry {
@@ -20,6 +22,7 @@ export function createToolRegistry(managers: Managers): ToolRegistry {
     realityChecker,
     documentationEngine,
     projectTracker,
+    agentManager,
   } = managers;
 
   return {
@@ -464,6 +467,94 @@ export function createToolRegistry(managers: Managers): ToolRegistry {
         uptime: process.uptime(),
         memory: process.memoryUsage(),
       }),
+    },
+
+    // Agent-related tools
+    agent_run: {
+      name: 'agent_run',
+      description: 'Run all agents to get suggestions for current context',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          session_id: { type: 'string' },
+          project_id: { type: 'string' },
+          current_phase: { type: 'string' },
+          context_usage_percent: { type: 'number' },
+        },
+        required: ['session_id', 'project_id', 'current_phase', 'context_usage_percent'],
+      },
+      handler: async (params) => agentManager.runAgents(params as any),
+    },
+
+    symbol_register: {
+      name: 'symbol_register',
+      description: 'Register a new symbol name for consistency',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string' },
+          session_id: { type: 'string' },
+          concept: { type: 'string' },
+          chosen_name: { type: 'string' },
+          context_type: { type: 'string' },
+        },
+        required: ['project_id', 'session_id', 'concept', 'chosen_name', 'context_type'],
+      },
+      handler: async (params) => agentManager.registerSymbol(params as any),
+    },
+
+    symbol_lookup: {
+      name: 'symbol_lookup',
+      description: 'Get recommended name for a concept',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string' },
+          concept: { type: 'string' },
+          context_type: { type: 'string' },
+        },
+        required: ['project_id', 'concept', 'context_type'],
+      },
+      handler: async (params) => agentManager.getSymbolName(params as any),
+    },
+
+    symbol_list: {
+      name: 'symbol_list',
+      description: 'Get all symbols for a project',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          project_id: { type: 'string' },
+        },
+        required: ['project_id'],
+      },
+      handler: async (params) => agentManager.getProjectSymbols(params as any),
+    },
+
+    agent_status: {
+      name: 'agent_status',
+      description: 'Get agent system status and statistics',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          agent_name: { type: 'string' },
+          project_id: { type: 'string' },
+        },
+      },
+      handler: async (params) => agentManager.getAgentStats(params as any),
+    },
+
+    agent_toggle: {
+      name: 'agent_toggle',
+      description: 'Enable or disable agent system',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean' },
+        },
+        required: ['enabled'],
+      },
+      handler: async (params) => agentManager.setAgentsEnabled(params as any),
     },
   };
 }
