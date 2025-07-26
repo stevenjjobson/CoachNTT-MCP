@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["/mnt/c/Users/Steve/OneDrive/Documents/Development/CoachNTT-MCP/dist/mcp-websocket-client.js"],
       "env": {
-        "MCP_WEBSOCKET_URL": "ws://localhost:8080",
+        "MCP_WEBSOCKET_URL": "ws://localhost:8180",
         "MCP_AUTH_TOKEN": "myworkflow-secret"
       }
     }

@@ -5,18 +5,20 @@ This document defines the standard port allocations for all services in the Coac
 
 ## Port Allocations
 
-### Core Services
-- **8080**: WebSocket Server (MyWorkFlowWebSocketServer)
+### Core Services (Updated Session 20)
+- **8180**: WebSocket Server (MyWorkFlowWebSocketServer)
   - Primary communication channel between MCP and UI
   - Handles real-time events and state synchronization
+  - Changed from 8080 to avoid common conflicts
   
-- **8081**: Health Check API
+- **8181**: Health Check API
   - HTTP endpoint for service health monitoring
-  - Automatically assigned as WebSocket port + 1
+  - Configured via MCP_HEALTH_PORT environment variable
   
-- **5173**: UI Dashboard (Vite Dev Server)
+- **5273**: UI Dashboard (Vite Dev Server)
   - Primary port for UI development server
-  - Falls back to 5174, 5175 if occupied (but should be avoided)
+  - Changed from 5173 to avoid Vite default conflicts
+  - Strict port mode enabled (no auto-increment)
 
 ### Test Services
 - **9999**: WebSocket Test Server

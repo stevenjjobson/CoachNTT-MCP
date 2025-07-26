@@ -56,7 +56,7 @@ Add to your Claude Code settings:
       "command": "node",
       "args": ["/path/to/CoachNTT-MCP/dist/mcp-websocket-client.js"],
       "env": {
-        "MCP_WEBSOCKET_URL": "ws://localhost:8080",
+        "MCP_WEBSOCKET_URL": "ws://localhost:8180",
         "MCP_AUTH_TOKEN": "your-auth-token"
       }
     }

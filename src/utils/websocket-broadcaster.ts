@@ -8,7 +8,7 @@ export class WebSocketBroadcaster {
   private reconnectTimer: NodeJS.Timeout | null = null;
   private requestId: number = 0;
 
-  private constructor(url: string = 'ws://localhost:8080') {
+  private constructor(url: string = `ws://localhost:${process.env.MCP_WEBSOCKET_PORT || '8180'}`) {
     this.url = url;
     this.connect();
   }

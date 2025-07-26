@@ -276,7 +276,7 @@ await tools.quick_action({
 ### Connecting to WebSocket Server
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8080');
+const ws = new WebSocket('ws://localhost:8180');
 
 // Authenticate
 ws.send(JSON.stringify({
@@ -434,7 +434,7 @@ Claude: Running reality check...
 ```python
 import mcp
 
-client = mcp.Client("localhost:8080")
+client = mcp.Client("localhost:8180")
 
 # Use any tool
 result = await client.call_tool(

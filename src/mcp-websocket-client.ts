@@ -42,7 +42,7 @@ class MCPWebSocketClient {
   private rl: any;
 
   constructor(
-    private wsUrl: string = process.env.MCP_WEBSOCKET_URL || 'ws://localhost:8080',
+    private wsUrl: string = process.env.MCP_WEBSOCKET_URL || 'ws://localhost:8180',
     private authToken: string = process.env.MCP_AUTH_TOKEN || 'myworkflow-secret'
   ) {
     // Set up stdin/stdout for communication with Claude Code

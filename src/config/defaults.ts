@@ -9,7 +9,7 @@ export const DEFAULT_CONFIG: MCPConfig = {
   },
   
   websocket: {
-    port: parseInt(process.env.MCP_WEBSOCKET_PORT || '8080'),
+    port: parseInt(process.env.MCP_WEBSOCKET_PORT || '8180'),
     host: process.env.MCP_WEBSOCKET_HOST || 'localhost',
     authToken: process.env.MCP_WEBSOCKET_AUTH || 'myworkflow-secret',
     heartbeatInterval: 30000, // 30 seconds

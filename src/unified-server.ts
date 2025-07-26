@@ -58,7 +58,7 @@ export class UnifiedServer {
       this.httpServer = createServer((req, res) => this.handleHttpRequest(req, res));
       
       // Start health check server
-      const healthPort = this.config.websocket.port + 1;
+      const healthPort = parseInt(process.env.MCP_HEALTH_PORT || String(this.config.websocket.port + 1));
       this.httpServer.listen(healthPort, () => {
         info(`Health check endpoint available at http://localhost:${healthPort}/health`);
       });
